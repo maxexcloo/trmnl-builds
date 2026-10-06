@@ -1,0 +1,34 @@
+name: Pages
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/pages.yaml', 'scripts/firmware.py', 'site/**']
+  workflow_call:
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+  pages: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Generate catalogue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/firmware.py catalogue
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+      - uses: actions/deploy-pages@v4
+        id: deployment

@@ -1,0 +1,24 @@
+name: Check
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Test release planning and packaging
+        run: python3 -m unittest discover -s tests
+      - name: Check browser JavaScript
+        run: |
+          python3 - <<'PYCODE' > /tmp/site.mjs
+          import pathlib, re
+          html = pathlib.Path('site/index.html').read_text()
+          print(re.search(r'<script type="module">(.*?)</script>', html, re.S)[1])
+          PYCODE
+          node --check /tmp/site.mjs
+      - name: Validate workflows
+        uses: docker://rhysd/actionlint:1.7.12

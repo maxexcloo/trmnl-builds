@@ -1,0 +1,144 @@
+name: Firmware
+on:
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published upstream release tag (blank checks for new releases)
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: firmware
+  cancel-in-progress: false
+jobs:
+  discover:
+    runs-on: ubuntu-24.04
+    outputs:
+      sha: ${{ steps.source.outputs.sha }}
+      tag: ${{ steps.plan.outputs.tag }}
+      targets: ${{ steps.targets.outputs.targets }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Find the next release
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: python scripts/firmware.py plan "$TAG"
+      - uses: actions/checkout@v7
+        if: steps.plan.outputs.tag != ''
+        with:
+          fetch-depth: 0
+          path: upstream
+          persist-credentials: false
+          ref: refs/tags/${{ steps.plan.outputs.tag }}
+          repository: usetrmnl/trmnl-firmware
+          submodules: recursive
+      - name: Record source
+        id: source
+        if: steps.plan.outputs.tag != ''
+        run: |
+          echo "sha=$(git -C upstream rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          tar --exclude=.git -czf upstream-source.tar.gz -C upstream .
+      - uses: actions/setup-python@v7
+        if: steps.plan.outputs.tag != ''
+        with:
+          python-version: '3.13'
+      - name: Discover firmware targets
+        id: targets
+        if: steps.plan.outputs.tag != ''
+        env:
+          INCLUDE_GIT_HASH_IN_VERSION_NUMBER: 'false'
+        run: |
+          pip install platformio==6.1.19
+          pio project config --project-dir upstream --json-output > config.json
+          python scripts/firmware.py discover config.json
+      - uses: actions/upload-artifact@v6
+        if: steps.plan.outputs.tag != ''
+        with:
+          name: source
+          path: upstream-source.tar.gz
+          retention-days: 1
+  build:
+    needs: discover
+    if: needs.discover.outputs.tag != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        target: ${{ fromJSON(needs.discover.outputs.targets) }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          path: upstream
+          persist-credentials: false
+          ref: ${{ needs.discover.outputs.sha }}
+          repository: usetrmnl/trmnl-firmware
+          submodules: recursive
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - run: pip install platformio==6.1.19
+      - name: Build firmware
+        id: build
+        working-directory: upstream
+        env:
+          INCLUDE_GIT_HASH_IN_VERSION_NUMBER: 'false'
+          TARGET: ${{ matrix.target }}
+        run: pio run -e "$TARGET"
+      - name: Collect result
+        if: always()
+        env:
+          OUTCOME: ${{ steps.build.outcome }}
+          TARGET: ${{ matrix.target }}
+        run: python scripts/firmware.py pack "$TARGET" "$OUTCOME"
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          if-no-files-found: error
+          name: firmware-${{ matrix.target }}
+          path: results/
+          retention-days: 1
+  publish:
+    needs: [discover, build]
+    if: always() && !cancelled() && needs.discover.result == 'success' && needs.discover.outputs.tag != ''
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v5
+        with:
+          merge-multiple: true
+          path: results
+          pattern: firmware-*
+      - uses: actions/download-artifact@v5
+        with:
+          name: source
+      - name: Publish binaries and build results
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ needs.discover.outputs.sha }}
+          TAG: ${{ needs.discover.outputs.tag }}
+          TARGETS: ${{ needs.discover.outputs.targets }}
+        run: python scripts/firmware.py publish "$TAG" "$SHA" "$TARGETS"
+  pages:
+    needs: [discover, build, publish]
+    if: always() && !cancelled() && needs.discover.result == 'success' && (needs.publish.result == 'success' || needs.publish.result == 'skipped')
+    uses: ./.github/workflows/pages.yaml
+    permissions:
+      contents: read
+      id-token: write
+      pages: write
