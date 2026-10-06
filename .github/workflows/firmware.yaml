@@ -57,7 +57,7 @@ jobs:
           pip install platformio==6.1.19
           pio project config --project-dir upstream --json-output > config.json
           python scripts/firmware.py discover config.json
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: steps.plan.outputs.tag != ''
         with:
           name: source
@@ -102,7 +102,7 @@ jobs:
           OUTCOME: ${{ steps.build.outcome }}
           TARGET: ${{ matrix.target }}
         run: python scripts/firmware.py pack "$TARGET" "$OUTCOME"
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           if-no-files-found: error
