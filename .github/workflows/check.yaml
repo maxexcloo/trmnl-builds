@@ -10,10 +10,11 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: astral-sh/setup-uv@v10
         with:
+          activate-environment: true
           python-version: '3.13'
-      - run: pip install -r requirements.txt
+      - run: uv sync
       - name: Test release planning and packaging
         run: python3 -m unittest discover -s tests
       - name: Check browser JavaScript
@@ -26,3 +27,8 @@ jobs:
           node --check /tmp/site.mjs
       - name: Validate workflows
         uses: docker://rhysd/actionlint:1.7.12
+      - uses: actions/upload-artifact@v7
+        with:
+          name: uv-lock
+          path: uv.lock
+          retention-days: 1

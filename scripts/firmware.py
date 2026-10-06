@@ -99,7 +99,7 @@ def pack(target, outcome):
     (destination / "result.json").write_text(json.dumps({"target": target, "status": outcome, "files": files, "flash": flash}))
 
 
-def publish(tag, sha, targets):
+def manifest(tag, sha, targets):
     repo = os.environ["GITHUB_REPOSITORY"]
     results = []
     for target in json.loads(targets):
@@ -117,17 +117,6 @@ def publish(tag, sha, targets):
              "Firmware is GPL-3.0; upstream source is attached. Application binaries are not full-flash images.\n\n"
              + ("Failed targets: " + ", ".join(failed) if failed else "All discovered targets built successfully."))
     Path("release-notes.md").write_text(notes + "\n")
-    # New releases stay private until all assets have uploaded.
-    existing = json.loads(run("gh", "api", "--paginate", "--slurp", f"repos/{repo}/releases?per_page=100"))
-    existing = [release for page in existing for release in page if release["tag_name"] == tag]
-    if not existing:
-        run("gh", "release", "create", tag, "--repo", repo, "--draft", "--target", "main",
-            "--title", tag, "--notes-file", "release-notes.md")
-    assets = ["upstream-source.tar.gz"]
-    assets += [str(path) for path in sorted(Path("results").glob("*/*.bin"))]
-    run("gh", "release", "upload", tag, *assets, "--repo", repo, "--clobber")
-    run("gh", "release", "upload", tag, "manifest.json", "--repo", repo, "--clobber")
-    run("gh", "release", "edit", tag, "--repo", repo, "--draft=false", "--notes-file", "release-notes.md")
     if failed:
         print(f"::warning::{len(failed)} targets failed; see release manifest and build logs")
 
@@ -176,7 +165,7 @@ if __name__ == "__main__":
     package = commands.add_parser("pack")
     package.add_argument("target")
     package.add_argument("outcome")
-    release = commands.add_parser("publish")
+    release = commands.add_parser("manifest")
     release.add_argument("tag")
     release.add_argument("sha")
     release.add_argument("targets")

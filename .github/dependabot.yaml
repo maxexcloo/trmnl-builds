@@ -7,7 +7,7 @@ updates:
         patterns: ['*']
     schedule:
       interval: monthly
-  - package-ecosystem: pip
+  - package-ecosystem: uv
     directory: /
     groups:
       build-tools:

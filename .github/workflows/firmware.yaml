@@ -44,9 +44,10 @@ jobs:
         run: |
           echo "sha=$(git -C upstream rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           tar --exclude=.git -czf upstream-source.tar.gz -C upstream .
-      - uses: actions/setup-python@v7
+      - uses: astral-sh/setup-uv@v10
         if: steps.plan.outputs.tag != ''
         with:
+          activate-environment: true
           python-version: '3.13'
       - name: Discover firmware targets
         id: targets
@@ -54,7 +55,7 @@ jobs:
         env:
           INCLUDE_GIT_HASH_IN_VERSION_NUMBER: 'false'
         run: |
-          pip install -r requirements.txt
+          uv sync
           pio project config --project-dir upstream --json-output > config.json
           python scripts/firmware.py discover config.json
       - uses: actions/upload-artifact@v7
@@ -85,10 +86,11 @@ jobs:
           ref: ${{ needs.discover.outputs.sha }}
           repository: usetrmnl/trmnl-firmware
           submodules: recursive
-      - uses: actions/setup-python@v7
+      - uses: astral-sh/setup-uv@v10
         with:
+          activate-environment: true
           python-version: '3.13'
-      - run: pip install -r requirements.txt
+      - run: uv sync
       - name: Build firmware
         id: build
         working-directory: upstream
@@ -127,13 +129,23 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           name: source
-      - name: Publish binaries and build results
+      - name: Prepare release manifest
         env:
           GH_TOKEN: ${{ github.token }}
           SHA: ${{ needs.discover.outputs.sha }}
           TAG: ${{ needs.discover.outputs.tag }}
           TARGETS: ${{ needs.discover.outputs.targets }}
-        run: python scripts/firmware.py publish "$TAG" "$SHA" "$TARGETS"
+        run: python scripts/firmware.py manifest "$TAG" "$SHA" "$TARGETS"
+      - uses: softprops/action-gh-release@v3
+        with:
+          body_path: release-notes.md
+          preserve_order: true
+          tag_name: ${{ needs.discover.outputs.tag }}
+          target_commitish: main
+          files: |
+            upstream-source.tar.gz
+            results/*/*.bin
+            manifest.json
   pages:
     needs: [discover, build, publish]
     if: always() && !cancelled() && needs.publish.result == 'success'

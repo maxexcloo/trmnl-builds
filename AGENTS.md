@@ -6,5 +6,5 @@
   upstream firmware here. Preserve upstream build flags and flash layouts.
 - Keep firmware execution in read-only jobs and publishing in a separate job.
 - Use Australian English and `.yaml` for project-owned YAML files.
-- Run `python3 -m unittest discover -s tests` and actionlint after workflow changes.
+- Use uv with the committed lockfile. Run `uv run --locked python -m unittest discover -s tests` and actionlint after workflow changes.
 - Preserve licences. Keep only README.md and AGENTS.md as root Markdown files.
