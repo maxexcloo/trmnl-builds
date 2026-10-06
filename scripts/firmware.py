@@ -67,7 +67,7 @@ def discover(path):
     if not targets:
         raise ValueError("No firmware targets found; inspect the upstream configuration")
     print("Excluded test/base environments:", ", ".join(sorted(skipped)))
-    output("targets", json.dumps(sorted(targets), separators=(",", ":")))
+    output("targets", json.dumps(sorted(targets, key=lambda name: (name != "TRMNL_X_PAPERS3", name)), separators=(",", ":")))
 
 
 def pack(target, outcome):

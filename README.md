@@ -31,6 +31,9 @@ builds, upstream cooperation or an external trigger would be needed.
 
 ## Builds
 
+M5Stack Paper S3 (`TRMNL_X_PAPERS3`) is prioritised in the build matrix and selected
+by default in the installer when present in the selected release.
+
 - Resolve each tag to a commit and use that commit for every target.
 - Use PlatformIO's resolved configuration, including inherited options. Select
   environments with a board and a `BOARD_*` or `DEVICE_MODEL` build flag, excluding
