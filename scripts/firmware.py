@@ -89,8 +89,11 @@ def pack(target, outcome):
                 # ESP image headers identify the chip, independent of target names.
                 # Upstream merged images start with the bootloader at offset zero.
                 if kind == "full-flash" and len(data) >= 24 and data[0] == 0xE9:
-                    chips = {0: "ESP32", 2: "ESP32-S2", 5: "ESP32-C3", 9: "ESP32-S3", 23: "ESP32-C5"}
-                    chip = chips.get(int.from_bytes(data[12:14], "little"))
+                    from esptool.targets import CHIP_DEFS
+
+                    chip_id = int.from_bytes(data[12:14], "little")
+                    chip = next((definition.CHIP_NAME for definition in CHIP_DEFS.values()
+                                 if getattr(definition, "IMAGE_CHIP_ID", None) == chip_id), None)
                     if chip:
                         flash = {"chipFamily": chip, "file": name, "size": len(data)}
     (destination / "result.json").write_text(json.dumps({"target": target, "status": outcome, "files": files, "flash": flash}))

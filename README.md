@@ -4,7 +4,7 @@ Build upstream [TRMNL firmware](https://github.com/usetrmnl/trmnl-firmware) rele
 tags for every discovered device environment. Browse tags, targets, downloads and
 build failures on GitHub Pages, and flash devices over USB using ESP Web Tools.
 
-Native GitHub Actions, one Python standard-library helper, one HTML page.
+Native GitHub Actions, one Python helper, one HTML page.
 Runs entirely on GitHub. No local installation, server, frontend build, database,
 PAT or additional cloud account. ESP Web Tools is loaded from its versioned CDN.
 
@@ -79,6 +79,7 @@ this project reports those failures without maintaining firmware patches.
 Checks run in GitHub Actions; local commands below are optional for contributors.
 
 ```sh
+pip install -r requirements.txt
 python3 -m unittest discover -s tests
 # With actionlint installed:
 actionlint .github/workflows/*.yaml
