@@ -7,3 +7,10 @@ updates:
         patterns: ['*']
     schedule:
       interval: monthly
+  - package-ecosystem: pip
+    directory: /
+    groups:
+      build-tools:
+        patterns: ['*']
+    schedule:
+      interval: monthly

@@ -54,7 +54,7 @@ jobs:
         env:
           INCLUDE_GIT_HASH_IN_VERSION_NUMBER: 'false'
         run: |
-          pip install platformio==6.1.19 esptool==5.4.0
+          pip install -r requirements.txt
           pio project config --project-dir upstream --json-output > config.json
           python scripts/firmware.py discover config.json
       - uses: actions/upload-artifact@v7
@@ -88,7 +88,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
-      - run: pip install platformio==6.1.19 esptool==5.4.0
+      - run: pip install -r requirements.txt
       - name: Build firmware
         id: build
         working-directory: upstream
