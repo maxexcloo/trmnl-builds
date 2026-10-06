@@ -47,7 +47,7 @@ jobs:
       - uses: actions/setup-python@v7
         if: steps.plan.outputs.tag != ''
         with:
-          python-version: '3.13'
+          python-version: '3.14'
       - name: Discover firmware targets
         id: targets
         if: steps.plan.outputs.tag != ''
@@ -87,7 +87,7 @@ jobs:
           submodules: recursive
       - uses: actions/setup-python@v7
         with:
-          python-version: '3.13'
+          python-version: '3.14'
       - run: pip install platformio==6.1.19
       - name: Build firmware
         id: build
