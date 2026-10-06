@@ -14,7 +14,7 @@ jobs:
         with:
           activate-environment: true
           python-version: '3.13'
-      - run: uv sync
+      - run: uv sync --locked
       - name: Test release planning and packaging
         run: python3 -m unittest discover -s tests
       - name: Check browser JavaScript
@@ -27,8 +27,3 @@ jobs:
           node --check /tmp/site.mjs
       - name: Validate workflows
         uses: docker://rhysd/actionlint:1.7.12
-      - uses: actions/upload-artifact@v7
-        with:
-          name: uv-lock
-          path: uv.lock
-          retention-days: 1

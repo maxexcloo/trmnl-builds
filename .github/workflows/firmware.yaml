@@ -55,7 +55,7 @@ jobs:
         env:
           INCLUDE_GIT_HASH_IN_VERSION_NUMBER: 'false'
         run: |
-          uv sync
+          uv sync --locked
           pio project config --project-dir upstream --json-output > config.json
           python scripts/firmware.py discover config.json
       - uses: actions/upload-artifact@v7
@@ -90,7 +90,7 @@ jobs:
         with:
           activate-environment: true
           python-version: '3.13'
-      - run: uv sync
+      - run: uv sync --locked
       - name: Build firmware
         id: build
         working-directory: upstream
