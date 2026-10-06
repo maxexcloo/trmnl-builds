@@ -41,38 +41,28 @@ class FirmwareTests(unittest.TestCase):
                 output.assert_called_once_with("tag", expected)
 
     def test_full_flash_chip_comes_from_image_header(self):
-        with tempfile.TemporaryDirectory() as directory:
-            previous = Path.cwd()
-            try:
-                os.chdir(directory)
-                build = Path("upstream/.pio/build/hardware")
-                build.mkdir(parents=True)
-                (build / "firmware.bin").write_bytes(b"application")
-                image = bytearray(24)
-                image[0] = 0xE9
-                image[12] = 9
-                (build / "merged_firmware.bin").write_bytes(image)
-                firmware.pack("hardware", "success")
-                result = json.loads(Path("results/hardware/result.json").read_text())
-                self.assertEqual(result["flash"]["chipFamily"], "ESP32-S3")
-                self.assertEqual(result["flash"]["file"], "hardware-full-flash.bin")
-            finally:
-                os.chdir(previous)
+        with tempfile.TemporaryDirectory() as directory, contextlib.chdir(directory):
+            build = Path("upstream/.pio/build/hardware")
+            build.mkdir(parents=True)
+            (build / "firmware.bin").write_bytes(b"application")
+            image = bytearray(24)
+            image[0] = 0xE9
+            image[12] = 9
+            (build / "merged_firmware.bin").write_bytes(image)
+            firmware.pack("hardware", "success")
+            result = json.loads(Path("results/hardware/result.json").read_text())
+            self.assertEqual(result["flash"]["chipFamily"], "ESP32-S3")
+            self.assertEqual(result["flash"]["file"], "hardware-full-flash.bin")
 
     def test_failure_never_packages_leftover_binaries(self):
-        with tempfile.TemporaryDirectory() as directory:
-            previous = Path.cwd()
-            try:
-                os.chdir(directory)
-                build = Path("upstream/.pio/build/hardware")
-                build.mkdir(parents=True)
-                (build / "firmware.bin").write_bytes(b"stale")
-                firmware.pack("hardware", "failure")
-                result = json.loads(Path("results/hardware/result.json").read_text())
-                self.assertEqual(result["files"], [])
-                self.assertEqual(list(Path("results").rglob("*.bin")), [])
-            finally:
-                os.chdir(previous)
+        with tempfile.TemporaryDirectory() as directory, contextlib.chdir(directory):
+            build = Path("upstream/.pio/build/hardware")
+            build.mkdir(parents=True)
+            (build / "firmware.bin").write_bytes(b"stale")
+            firmware.pack("hardware", "failure")
+            result = json.loads(Path("results/hardware/result.json").read_text())
+            self.assertEqual(result["files"], [])
+            self.assertEqual(list(Path("results").rglob("*.bin")), [])
 
 
 if __name__ == "__main__":

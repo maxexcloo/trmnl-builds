@@ -14,7 +14,7 @@
   table { border-collapse: collapse; width: 100%; text-align: left; }
   th, td { border-bottom: 1px solid #8886; padding: .8rem .5rem; vertical-align: top; }
   td a { display: block; overflow-wrap: anywhere; }
-  button, input { font: inherit; }
+  input { font: inherit; }
   esp-web-install-button { display: block; margin-top: .5rem; }
   .scroll { overflow-x: auto; }
   footer { margin-top: 3rem; font-size: .9rem; }
@@ -53,13 +53,6 @@
     objectUrls.push(url);
     const button = document.createElement('esp-web-install-button');
     button.setAttribute('manifest', url);
-    const activate = document.createElement('button');
-    activate.slot = 'activate';
-    activate.textContent = 'Flash via USB';
-    const unsupported = document.createElement('span');
-    unsupported.slot = 'unsupported';
-    unsupported.textContent = 'Use a browser with Web Serial support.';
-    button.append(activate, unsupported);
     return button;
   }
   function flashing(cell, item, result) {
