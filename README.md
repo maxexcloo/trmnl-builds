@@ -40,7 +40,7 @@ by default in the installer when present in the selected release.
   integration test environments. This currently includes development variants;
   their upstream debug settings are preserved. Review discovery if upstream changes
   its conventions.
-- Run each target in a clean Ubuntu job, with at most four concurrent builds.
+- Run each target in a clean Ubuntu job, with at most eight concurrent builds.
 - Preserve upstream build scripts and dependency pins. Publish `firmware.bin` as
   `TARGET-application.bin` and, where upstream generates it, `merged_firmware.bin`
   as `TARGET-full-flash.bin`. Never invent flash offsets or merged images.
