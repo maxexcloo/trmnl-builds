@@ -121,7 +121,7 @@ def publish(tag, sha, targets):
     existing = json.loads(run("gh", "api", "--paginate", "--slurp", f"repos/{repo}/releases?per_page=100"))
     existing = [release for page in existing for release in page if release["tag_name"] == tag]
     if not existing:
-        run("gh", "release", "create", tag, "--repo", repo, "--draft", "--target", os.environ["GITHUB_SHA"],
+        run("gh", "release", "create", tag, "--repo", repo, "--draft", "--target", "main",
             "--title", tag, "--notes-file", "release-notes.md")
     assets = ["upstream-source.tar.gz"]
     assets += [str(path) for path in sorted(Path("results").glob("*/*.bin"))]
