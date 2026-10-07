@@ -257,21 +257,12 @@
             table.hidden = false;
           }
           function chooseRelease() {
-            const previous = target.options.length
-              ? target.value
-              : "TRMNL_X_PAPERS3";
+            const previous = target.value;
             target.replaceChildren(new Option("All Targets", ""));
             for (const result of releases.find(
               (item) => item.tag === release.value,
             ).targets) {
-              target.add(
-                new Option(
-                  result.target === "TRMNL_X_PAPERS3"
-                    ? "M5Stack Paper S3 (TRMNL_X_PAPERS3)"
-                    : result.target,
-                  result.target,
-                ),
-              );
+              target.add(new Option(result.target, result.target));
             }
             if ([...target.options].some((option) => option.value === previous))
               target.value = previous;

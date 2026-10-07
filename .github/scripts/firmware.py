@@ -27,6 +27,7 @@ def catalogue():
         urls = {
             asset["name"]: asset["browser_download_url"] for asset in release["assets"]
         }
+        manifest["targets"].sort(key=lambda result: result["target"])
         for result in manifest["targets"]:
             for item in result["files"]:
                 item["url"] = urls[item["name"]]
@@ -94,7 +95,7 @@ def discover(path):
     output(
         "targets",
         json.dumps(
-            sorted(targets, key=lambda name: (name != "TRMNL_X_PAPERS3", name)),
+            sorted(targets),
             separators=(",", ":"),
         ),
     )
