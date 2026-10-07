@@ -1,0 +1,10 @@
+--- a/platformio.ini
++++ b/platformio.ini
+@@ -986,6 +986,7 @@
+ 	${deps_app.lib_deps}
+ 
+ [env:CrowPanel42]
++extends = env:esp32_base
+ board = esp32-s3-devkitc-1
+ framework = arduino
+ extra_scripts =

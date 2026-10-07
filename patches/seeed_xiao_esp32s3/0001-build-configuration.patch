@@ -1,0 +1,10 @@
+--- a/platformio.ini
++++ b/platformio.ini
+@@ -300,6 +300,7 @@
+ 
+ [env:seeed_xiao_esp32s3]
+ extends = env:esp32_base
++framework = arduino
+ board = seeed_xiao_esp32s3
+ extra_scripts =
+ 	pre:scripts/extra/git_version.py

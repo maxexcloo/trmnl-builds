@@ -47,6 +47,24 @@ class FirmwareTests(unittest.TestCase):
                 json.loads(output.call_args.args[1]), ["hardware", "model"]
             )
 
+    def test_discovery_excludes_unimplemented_board_templates(self):
+        config = [
+            ["env:display", [["board", "esp32"], ["build_flags", ["-DBOARD_DISPLAY"]]]],
+            ["env:template", [["board", "esp32"], ["build_flags", ["-DBOARD_TEMPLATE"]]]],
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "src").mkdir()
+            (root / "src/display.cpp").write_text("#ifdef BOARD_DISPLAY\n#endif\n")
+            path = root / "config.json"
+            path.write_text(json.dumps(config))
+            with (
+                patch.object(firmware, "output") as output,
+                contextlib.redirect_stdout(io.StringIO()),
+            ):
+                firmware.discover(path, root)
+            self.assertEqual(json.loads(output.call_args.args[1]), ["display"])
+
     def test_discovery_adds_only_targets_with_patches(self):
         config = [
             ["env:beta", [["board", "esp32"], ["build_flags", ["-DBOARD_BETA"]]]],

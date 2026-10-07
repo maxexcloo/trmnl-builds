@@ -71,7 +71,16 @@ def catalogue():
     Path("site/catalogue.json").write_text(json.dumps(entries, indent=2) + "\n")
 
 
-def discover(path):
+def discover(path, source=None):
+    supported_boards = None
+    if source is not None:
+        supported_boards = set()
+        for directory in ("include", "lib", "src"):
+            for file in (source / directory).rglob("*"):
+                if file.suffix in {".c", ".cpp", ".h", ".hpp"}:
+                    supported_boards.update(
+                        re.findall(r"\bBOARD_[A-Z0-9_]+\b", file.read_text(errors="replace"))
+                    )
     config = json.loads(path.read_text())
     targets = []
     skipped = []
@@ -82,7 +91,10 @@ def discover(path):
         options = dict(pairs)
         flags = str(options.get("build_flags", ""))
         # Base environments have no device selection; tests replace the application.
-        device = re.search(r"(?:BOARD_[A-Z0-9_]+|DEVICE_MODEL)(?:=|\b)", flags)
+        boards = set(re.findall(r"BOARD_[A-Z0-9_]+\b", flags))
+        if supported_boards is not None:
+            boards &= supported_boards
+        device = boards or re.search(r"DEVICE_MODEL(?:=|\b)", flags)
         if options.get("board") and device and not options.get("test_build_src"):
             if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", name):
                 raise ValueError(f"Unsupported target name: {name!r}")
@@ -275,7 +287,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("catalogue")
-    commands.add_parser("discover").add_argument("path", type=Path)
+    discovery = commands.add_parser("discover")
+    discovery.add_argument("path", type=Path)
+    discovery.add_argument("--source", type=Path)
     commands.add_parser("plan").add_argument("tag", nargs="?", default="")
     prepare_command = commands.add_parser("prepare")
     prepare_command.add_argument("path", type=Path)

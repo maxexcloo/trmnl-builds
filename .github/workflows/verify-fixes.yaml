@@ -1,0 +1,59 @@
+name: Verify Build Fixes
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    name: ${{ matrix.tag }} · ${{ matrix.target }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - tag: v1.8.17
+            target: CrowPanel42
+            patched: true
+          - tag: v1.8.17
+            target: seeed_xiao_esp32s3
+            patched: true
+          - tag: v1.8.17
+            target: TRMNL_X_EPDIY
+            patched: false
+          - tag: v1.8.16
+            target: TRMNL_X_PAPERS3
+            patched: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Checkout Upstream
+        uses: actions/checkout@v7
+        with:
+          path: upstream
+          repository: usetrmnl/trmnl-firmware
+          ref: ${{ matrix.tag }}
+          fetch-depth: 0
+          submodules: recursive
+          persist-credentials: false
+      - name: Prepare Patched Source
+        if: matrix.patched
+        run: python3 .github/scripts/firmware.py prepare upstream "$TARGET"
+        env:
+          TARGET: ${{ matrix.target }}
+      - name: Set Up Python & uv
+        uses: astral-sh/setup-uv@v10.2.0
+        with:
+          activate-environment: true
+          python-version: "3.13"
+      - name: Install Dependencies
+        run: uv sync --locked
+      - name: Build Firmware
+        working-directory: upstream
+        run: pio run -e "$TARGET"
+        env:
+          INCLUDE_GIT_HASH_IN_VERSION_NUMBER: "false"
+          PIP_CONSTRAINT: ${{ github.workspace }}/.github/constraints.txt
+          TARGET: ${{ matrix.target }}
