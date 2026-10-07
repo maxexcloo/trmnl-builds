@@ -12,5 +12,9 @@ updates:
     groups:
       build-tools:
         patterns: ['*']
+    # Confirmed Paper S3 build failure: pioarduino/platform-espressif32#529.
+    ignore:
+      - dependency-name: platformio
+        versions: ['6.2.0']
     schedule:
       interval: monthly
