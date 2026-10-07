@@ -13,7 +13,9 @@
 
 ## Style
 
-- Prefer direct code and standard tools; add dependencies only for a concrete need.
+- Prefer native GitHub Actions and maintained off-the-shelf actions over scripts
+  where they cover the task. Keep custom code limited to project-specific behaviour;
+  add dependencies only for a concrete need.
 - Sort unordered entries alphabetically, with simple values before structured
   values. Preserve procedural, interface and priority order.
 - Use Australian English and `.yaml` for project-owned YAML files.
