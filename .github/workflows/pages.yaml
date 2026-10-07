@@ -14,12 +14,14 @@ concurrency:
   group: pages
 jobs:
   deploy:
+    name: Deploy
     runs-on: ubuntu-24.04
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
           ref: main
@@ -27,9 +29,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: python scripts/firmware.py catalogue
-      - uses: actions/configure-pages@v6
-      - uses: actions/upload-pages-artifact@v5
+      - name: Configure Pages
+        uses: actions/configure-pages@v6
+      - name: Upload Pages
+        uses: actions/upload-pages-artifact@v5
         with:
           path: site
-      - uses: actions/deploy-pages@v5
+      - name: Deploy Pages
+        uses: actions/deploy-pages@v5
         id: deployment

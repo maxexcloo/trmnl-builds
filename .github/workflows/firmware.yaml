@@ -14,13 +14,15 @@ concurrency:
   group: firmware
 jobs:
   discover:
+    name: Discover
     runs-on: ubuntu-24.04
     outputs:
       sha: ${{ steps.source.outputs.sha }}
       tag: ${{ steps.plan.outputs.tag }}
       targets: ${{ steps.targets.outputs.targets }}
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Find the Next Release
@@ -29,7 +31,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag }}
         run: python scripts/firmware.py plan "$TAG"
-      - uses: actions/checkout@v7
+      - name: Checkout Upstream
+        uses: actions/checkout@v7
         if: steps.plan.outputs.tag != ''
         with:
           fetch-depth: 0
@@ -44,7 +47,8 @@ jobs:
         run: |
           echo "sha=$(git -C upstream rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           tar --exclude=.git -czf upstream-source.tar.gz -C upstream .
-      - uses: astral-sh/setup-uv@v10.2.0
+      - name: Set Up Python & uv
+        uses: astral-sh/setup-uv@v10.2.0
         if: steps.plan.outputs.tag != ''
         with:
           activate-environment: true
@@ -58,13 +62,15 @@ jobs:
           uv sync --locked
           pio project config --project-dir upstream --json-output > config.json
           python scripts/firmware.py discover config.json
-      - uses: actions/upload-artifact@v7
+      - name: Upload Source
+        uses: actions/upload-artifact@v7
         if: steps.plan.outputs.tag != ''
         with:
           name: source
           path: upstream-source.tar.gz
           retention-days: 1
   build:
+    name: Build ${{ matrix.target }}
     needs: discover
     if: needs.discover.outputs.tag != ''
     runs-on: ubuntu-24.04
@@ -75,10 +81,12 @@ jobs:
       matrix:
         target: ${{ fromJSON(needs.discover.outputs.targets) }}
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/checkout@v7
+      - name: Checkout Upstream
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           path: upstream
@@ -86,11 +94,13 @@ jobs:
           ref: ${{ needs.discover.outputs.sha }}
           repository: usetrmnl/trmnl-firmware
           submodules: recursive
-      - uses: astral-sh/setup-uv@v10.2.0
+      - name: Set Up Python & uv
+        uses: astral-sh/setup-uv@v10.2.0
         with:
           activate-environment: true
           python-version: '3.13'
-      - run: uv sync --locked
+      - name: Install Dependencies
+        run: uv sync --locked
       - name: Build Firmware
         id: build
         working-directory: upstream
@@ -104,7 +114,8 @@ jobs:
           OUTCOME: ${{ steps.build.outcome }}
           TARGET: ${{ matrix.target }}
         run: python scripts/firmware.py pack "$TARGET" "$OUTCOME"
-      - uses: actions/upload-artifact@v7
+      - name: Upload Firmware
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           if-no-files-found: error
@@ -112,21 +123,25 @@ jobs:
           path: results/
           retention-days: 1
   publish:
+    name: Publish
     needs: [discover, build]
     if: always() && !cancelled() && needs.discover.result == 'success' && needs.discover.outputs.tag != ''
     runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v8
+      - name: Download Firmware
+        uses: actions/download-artifact@v8
         with:
           merge-multiple: true
           path: results
           pattern: firmware-*
-      - uses: actions/download-artifact@v8
+      - name: Download Source
+        uses: actions/download-artifact@v8
         with:
           name: source
       - name: Prepare Release Manifest
@@ -136,7 +151,8 @@ jobs:
           TAG: ${{ needs.discover.outputs.tag }}
           TARGETS: ${{ needs.discover.outputs.targets }}
         run: python scripts/firmware.py manifest "$TAG" "$SHA" "$TARGETS"
-      - uses: softprops/action-gh-release@v3
+      - name: Publish Release
+        uses: softprops/action-gh-release@v3
         with:
           body_path: release-notes.md
           preserve_order: true
@@ -147,6 +163,7 @@ jobs:
             results/*/*.bin
             manifest.json
   pages:
+    name: Pages
     needs: [discover, build, publish]
     if: always() && !cancelled() && needs.publish.result == 'success'
     uses: ./.github/workflows/pages.yaml

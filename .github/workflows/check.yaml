@@ -10,16 +10,20 @@ concurrency:
   group: check-${{ github.ref }}
 jobs:
   check:
+    name: Check
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@v10.2.0
+      - name: Set Up Python & uv
+        uses: astral-sh/setup-uv@v10.2.0
         with:
           activate-environment: true
           python-version: '3.13'
-      - run: uv sync --locked
+      - name: Install Dependencies
+        run: uv sync --locked
       - name: Test Release Planning & Packaging
         run: python3 -m unittest discover -s tests
       - name: Check Browser JavaScript

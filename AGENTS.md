@@ -19,8 +19,8 @@
 - Sort unordered entries alphabetically, with simple values before structured
   values. Preserve procedural, interface and priority order.
 - Use Australian English and `.yaml` for project-owned YAML files.
-- Use Title Case for headings and labels, with `&` instead of `And`. Keep prose in
-  sentence case and preserve upstream names.
+- Use Title Case for headings, labels and Actions workflow, job and step names,
+  with `&` instead of `And`. Keep prose in sentence case and preserve upstream names.
 
 ## Verification
 
