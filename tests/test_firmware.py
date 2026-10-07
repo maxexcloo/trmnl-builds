@@ -1,4 +1,5 @@
 import contextlib
+import difflib
 import importlib.util
 import io
 import json
@@ -46,6 +47,36 @@ class FirmwareTests(unittest.TestCase):
                 json.loads(output.call_args.args[1]), ["hardware", "model"]
             )
 
+    def test_discovery_adds_only_targets_with_patches(self):
+        config = [
+            ["env:beta", [["board", "esp32"], ["build_flags", ["-DBOARD_BETA"]]]],
+            ["env:alpha", [["board", "esp32"], ["build_flags", ["-DBOARD_ALPHA"]]]],
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "alpha").mkdir()
+            (root / "alpha/0001-fix.patch").touch()
+            path = root / "config.json"
+            path.write_text(json.dumps(config))
+            with (
+                patch.object(firmware, "PATCHES", root),
+                patch.object(firmware, "output") as output,
+                contextlib.redirect_stdout(io.StringIO()),
+            ):
+                firmware.discover(path)
+            values = {
+                call.args[0]: json.loads(call.args[1]) for call in output.call_args_list
+            }
+            self.assertEqual(values["targets"], ["alpha", "alpha-patched", "beta"])
+            self.assertEqual(
+                values["builds"],
+                [
+                    {"name": "alpha", "patched": False, "target": "alpha"},
+                    {"name": "alpha-patched", "patched": True, "target": "alpha"},
+                    {"name": "beta", "patched": False, "target": "beta"},
+                ],
+            )
+
     def test_prepare_preserves_native_waveform_and_is_idempotent(self):
         original = (
             "    int rc = bbep.setCustomMatrix(u8_graytable, sizeof(u8_graytable));\n"
@@ -55,47 +86,82 @@ class FirmwareTests(unittest.TestCase):
             root = Path(directory)
             (root / "src").mkdir()
             display = root / "src/display.cpp"
-            display.write_text("before\n" + original + "after\n")
-            (root / "platformio.ini").write_text("-D BOARD_TRMNL_X_PAPERS3\n")
+            display.write_text("before\n {\n" + original + "\nafter\n")
             with contextlib.redirect_stdout(io.StringIO()):
-                firmware.prepare(root)
+                firmware.prepare(root, "TRMNL_X_PAPERS3")
                 prepared = display.read_text()
-                firmware.prepare(root)
+                firmware.prepare(root, "TRMNL_X_PAPERS3")
             self.assertEqual(display.read_text(), prepared)
-            self.assertIn("#ifndef BOARD_TRMNL_X_PAPERS3\n", prepared)
-            self.assertIn(original + "#endif\n", prepared)
+            self.assertNotIn("setCustomMatrix", prepared)
+            self.assertIn("native Paper S3 greyscale waveform", prepared)
             self.assertTrue(prepared.startswith("before\n"))
             self.assertTrue(prepared.endswith("after\n"))
-            display.write_text(original)
-            (root / "platformio.ini").write_text("-D RENAMED_PAPER_BOARD\n")
-            with self.assertRaisesRegex(ValueError, "board flag changed"):
-                firmware.prepare(root)
-            self.assertEqual(display.read_text(), original)
 
-    def test_prepare_rejects_changed_or_duplicate_overrides_without_writing(self):
-        for source in [
-            "bbep.setCustomMatrix(u8_graytable, new_size);",
-            "bbep.setCustomMatrix(u8_graytable, size);\n" * 2,
-            "const uint8_t u8_graytable[] = {};",
-        ]:
-            with self.subTest(source=source), tempfile.TemporaryDirectory() as directory:
-                root = Path(directory)
-                (root / "src").mkdir()
-                display = root / "src/display.cpp"
-                display.write_text(source)
-                with self.assertRaisesRegex(ValueError, "Upstream greyscale override changed"):
-                    firmware.prepare(root)
-                self.assertEqual(display.read_text(), source)
-
-    def test_prepare_skips_source_without_shared_override(self):
+    def test_prepare_rejects_changed_source_without_writing(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "src").mkdir()
             display = root / "src/display.cpp"
-            display.write_text("bbep.fullUpdate();\n")
-            with contextlib.redirect_stdout(io.StringIO()):
-                firmware.prepare(root)
-            self.assertEqual(display.read_text(), "bbep.fullUpdate();\n")
+            source = "bbep.setCustomMatrix(u8_graytable, new_size);\n"
+            display.write_text(source)
+            with self.assertRaisesRegex(ValueError, "does not match upstream"):
+                firmware.prepare(root, "TRMNL_X_PAPERS3")
+            self.assertEqual(display.read_text(), source)
+
+    def test_prepare_discovers_patch_files_in_order(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            patches = root / "patches/example"
+            patches.mkdir(parents=True)
+            for filename, patch_name in [
+                ("a.txt", "0002-a.patch"),
+                ("b.txt", "0001-b.patch"),
+            ]:
+                (root / filename).write_text("original\n")
+                diff = difflib.unified_diff(
+                    ["original\n"],
+                    ["patched\n"],
+                    fromfile=f"a/{filename}",
+                    tofile=f"b/{filename}",
+                )
+                (patches / patch_name).write_text("".join(diff))
+            output = io.StringIO()
+            with (
+                patch.object(firmware, "PATCHES", root / "patches"),
+                contextlib.redirect_stdout(output),
+            ):
+                firmware.prepare(root, "example")
+            self.assertEqual(
+                output.getvalue().splitlines(),
+                ["Applied: 0001-b.patch", "Applied: 0002-a.patch"],
+            )
+            self.assertEqual((root / "a.txt").read_text(), "patched\n")
+            self.assertEqual((root / "b.txt").read_text(), "patched\n")
+
+    def test_pack_keeps_original_and_patched_variants_separate(self):
+        with tempfile.TemporaryDirectory() as directory, contextlib.chdir(directory):
+            build = Path("upstream/.pio/build/hardware")
+            build.mkdir(parents=True)
+            (build / "firmware.bin").write_bytes(b"original")
+            firmware.pack("hardware", "success")
+            (build / "firmware.bin").write_bytes(b"patched")
+            firmware.pack("hardware", "success", "hardware-patched")
+            self.assertEqual(
+                Path("results/hardware/hardware-application.bin").read_bytes(),
+                b"original",
+            )
+            self.assertEqual(
+                Path(
+                    "results/hardware-patched/hardware-patched-application.bin"
+                ).read_bytes(),
+                b"patched",
+            )
+            result = json.loads(
+                Path("results/hardware-patched/result.json").read_text()
+            )
+            self.assertEqual(result["environment"], "hardware")
+            self.assertTrue(result["patched"])
+            self.assertEqual(result["target"], "hardware-patched")
 
     def test_polling_bootstraps_latest_then_catches_every_missing_release(self):
         upstream = [

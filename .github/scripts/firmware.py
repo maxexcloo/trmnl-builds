@@ -8,6 +8,7 @@ import re
 import subprocess
 from pathlib import Path
 
+PATCHES = Path(__file__).resolve().parents[1] / "patches"
 UPSTREAM = "usetrmnl/trmnl-firmware"
 
 
@@ -93,13 +94,18 @@ def discover(path):
             "No firmware targets found; inspect the upstream configuration"
         )
     print("Excluded test/base environments:", ", ".join(sorted(skipped)))
-    output(
-        "targets",
-        json.dumps(
-            sorted(targets),
-            separators=(",", ":"),
-        ),
-    )
+    builds = []
+    for target in sorted(targets):
+        builds.append({"name": target, "patched": False, "target": target})
+        if any((PATCHES / target).glob("*.patch")):
+            builds.append(
+                {"name": f"{target}-patched", "patched": True, "target": target}
+            )
+    names = [build["name"] for build in builds]
+    if len(names) != len(set(names)):
+        raise ValueError("Patched variant name conflicts with an upstream target")
+    output("builds", json.dumps(builds, separators=(",", ":")))
+    output("targets", json.dumps(names, separators=(",", ":")))
 
 
 def manifest(tag, sha, targets):
@@ -126,7 +132,8 @@ def manifest(tag, sha, targets):
         f"Community builds of [{UPSTREAM} {tag}](https://github.com/{UPSTREAM}/tree/{sha}).\n\n"
         f"Upstream commit: `{sha}`. [Build logs]({manifest['run']}).\n\n"
         "Firmware is GPL-3.0; the exact prepared source is attached, including any "
-        "local Paper S3 waveform adjustment. Application binaries are not full-flash images.\n\n"
+        "local adjustments for explicitly patched variants. Each patched variant has its own "
+        "source archive. Application binaries are not full-flash images.\n\n"
         + (
             "Failed targets: " + ", ".join(failed)
             if failed
@@ -145,8 +152,9 @@ def output(name, value):
         stream.write(f"{name}={value}\n")
 
 
-def pack(target, outcome):
-    destination = Path("results") / target
+def pack(target, outcome, name=None):
+    name = name or target
+    destination = Path("results") / name
     destination.mkdir(parents=True, exist_ok=True)
     files = []
     flash = None
@@ -160,10 +168,12 @@ def pack(target, outcome):
         ]:
             source = build / filename
             if source.is_file():
-                name = f"{target}-{kind}.bin"
+                filename = f"{name}-{kind}.bin"
                 data = source.read_bytes()
-                (destination / name).write_bytes(data)
-                files.append({"name": name, "sha256": hashlib.sha256(data).hexdigest()})
+                (destination / filename).write_bytes(data)
+                files.append(
+                    {"name": filename, "sha256": hashlib.sha256(data).hexdigest()}
+                )
                 # ESP image headers identify the chip, independent of target names.
                 # Upstream merged images start with the bootloader at offset zero.
                 if kind == "full-flash" and len(data) >= 24 and data[0] == 0xE9:
@@ -179,10 +189,21 @@ def pack(target, outcome):
                         None,
                     )
                     if chip:
-                        flash = {"chipFamily": chip, "file": name, "size": len(data)}
+                        flash = {
+                            "chipFamily": chip,
+                            "file": filename,
+                            "size": len(data),
+                        }
     (destination / "result.json").write_text(
         json.dumps(
-            {"target": target, "status": outcome, "files": files, "flash": flash}
+            {
+                "environment": target,
+                "patched": name != target,
+                "status": outcome,
+                "target": name,
+                "files": files,
+                "flash": flash,
+            }
         )
     )
 
@@ -214,36 +235,29 @@ def plan(tag):
     output("tag", tag)
 
 
-def prepare(path):
-    """Keep the Paper S3's native waveform when upstream overrides it globally."""
-    display = path / "src/display.cpp"
-    source = display.read_text()
-    original = (
-        "    int rc = bbep.setCustomMatrix(u8_graytable, sizeof(u8_graytable));\n"
-        '    Log_info("%s [%d]: setCustomMatrix returned %d\\r\\n", __FILE__, __LINE__, rc);\n'
-    )
-    replacement = (
-        "#ifndef BOARD_TRMNL_X_PAPERS3\n"
-        "    // Preserve FastEPD's panel-specific Paper S3 greyscale waveform.\n"
-        + original
-        + "#endif\n"
-    )
-    if source.count(replacement) == 1 and source.count("bbep.setCustomMatrix(") == 1:
-        print("Paper S3 waveform adjustment already applied")
-        return
-    if "u8_graytable" not in source and "setCustomMatrix" not in source:
-        print("No shared greyscale override found; source unchanged")
-        return
-    if source.count(original) != 1 or source.count("bbep.setCustomMatrix(") != 1:
-        raise ValueError(
-            "Upstream greyscale override changed; review the Paper S3 adjustment"
+def prepare(path, target):
+    """Apply the target's checked-in patches in filename order."""
+    patches = sorted((PATCHES / target).glob("*.patch"))
+    if not patches:
+        raise ValueError(f"No patches found for {target}")
+    for patch_file in patches:
+        command = ["git", "-C", str(path.resolve()), "apply"]
+        patch_path = str(patch_file.resolve())
+        reverse = subprocess.run(
+            [*command, "--reverse", "--check", patch_path], capture_output=True
         )
-    if "BOARD_TRMNL_X_PAPERS3" not in (path / "platformio.ini").read_text():
-        raise ValueError(
-            "Upstream Paper S3 board flag changed; review the waveform adjustment"
+        if reverse.returncode == 0:
+            print(f"Already applied: {patch_file.name}")
+            continue
+        check = subprocess.run(
+            [*command, "--check", patch_path], capture_output=True, text=True
         )
-    display.write_text(source.replace(original, replacement, 1))
-    print("Preserved the native Paper S3 greyscale waveform; other boards unchanged")
+        if check.returncode:
+            raise ValueError(
+                f"Patch {patch_file.name} does not match upstream: {check.stderr.strip()}"
+            )
+        subprocess.run([*command, patch_path], check=True)
+        print(f"Applied: {patch_file.name}")
 
 
 def releases(repo):
@@ -263,10 +277,13 @@ if __name__ == "__main__":
     commands.add_parser("catalogue")
     commands.add_parser("discover").add_argument("path", type=Path)
     commands.add_parser("plan").add_argument("tag", nargs="?", default="")
-    commands.add_parser("prepare").add_argument("path", type=Path)
+    prepare_command = commands.add_parser("prepare")
+    prepare_command.add_argument("path", type=Path)
+    prepare_command.add_argument("target")
     package = commands.add_parser("pack")
     package.add_argument("target")
     package.add_argument("outcome")
+    package.add_argument("--name")
     release = commands.add_parser("manifest")
     release.add_argument("tag")
     release.add_argument("sha")

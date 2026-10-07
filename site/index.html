@@ -202,10 +202,12 @@
           href: url,
           textContent: text,
         });
+      const targetName = (result) =>
+        result.patched ? `${result.environment} (Patched)` : result.target;
       let objectUrls = [];
       function installer(item, result, binaryUrl) {
         const manifest = {
-          name: `TRMNL ${result.target}`,
+          name: `TRMNL ${targetName(result)}`,
           new_install_improv_wait_time: 0,
           new_install_prompt_erase: true,
           version: item.tag,
@@ -313,7 +315,7 @@
             body.replaceChildren();
             for (const result of results) {
               const row = body.insertRow();
-              row.insertCell().textContent = result.target;
+              row.insertCell().textContent = targetName(result);
               const build = row.insertCell();
               build.className =
                 result.status === "success" ? "built" : "failed";
@@ -359,7 +361,10 @@
                       ? "Built · File Flashing"
                       : "Built · Downloads Only";
               target.add(
-                new Option(`${result.target} · ${availability}`, result.target),
+                new Option(
+                  `${targetName(result)} · ${availability}`,
+                  result.target,
+                ),
               );
             }
             if ([...target.options].some((option) => option.value === previous))

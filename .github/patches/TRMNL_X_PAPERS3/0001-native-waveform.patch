@@ -1,0 +1,8 @@
+--- a/src/display.cpp
++++ b/src/display.cpp
+@@ -1892,4 +1892,3 @@
+  {
+-    int rc = bbep.setCustomMatrix(u8_graytable, sizeof(u8_graytable));
+-    Log_info("%s [%d]: setCustomMatrix returned %d\r\n", __FILE__, __LINE__, rc);
++    // Preserve FastEPD's native Paper S3 greyscale waveform.
+ 
