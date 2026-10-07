@@ -72,6 +72,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: source
+          overwrite: true
           path: upstream-source.tar.gz
           retention-days: 1
   build:
@@ -135,6 +136,7 @@ jobs:
         with:
           if-no-files-found: error
           name: firmware-${{ matrix.name }}
+          overwrite: true
           path: results/
           retention-days: 1
   publish:
