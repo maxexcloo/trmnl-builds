@@ -31,6 +31,7 @@ def catalogue():
         for result in manifest["targets"]:
             for item in result["files"]:
                 item["url"] = urls[item["name"]]
+        manifest["updated_at"] = asset["updated_at"]
         manifest["url"] = release["html_url"]
         entries.append(manifest)
     entries.sort(key=lambda entry: entry["published_at"], reverse=True)

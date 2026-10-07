@@ -15,68 +15,116 @@
           16px/1.6 system-ui,
           sans-serif;
       }
-
+      .built {
+        color: light-dark(#166534, #86efac);
+        font-weight: 600;
+      }
+      .controls {
+        background: light-dark(#f6f8fa, #1b222c);
+        border: 1px solid #8884;
+        border-radius: 0.75rem;
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+        margin: 2rem 0 1rem;
+        padding: 1.25rem;
+      }
+      .failed {
+        color: light-dark(#a12a22, #fca5a5);
+        font-weight: 600;
+      }
       .scroll {
+        border: 1px solid #8884;
+        border-radius: 0.75rem;
         overflow-x: auto;
       }
-
+      #source,
+      #status {
+        font-size: 0.9rem;
+      }
       a {
-        color: light-dark(#075caf, #84bcff);
+        color: light-dark(#075caf, #93c5fd);
+        text-underline-offset: 0.2em;
       }
-
       body {
-        margin: 4rem auto;
-        max-width: 68rem;
-        padding: 0 1.5rem;
+        background: light-dark(#fff, #11161d);
+        color: light-dark(#202936, #e2e8f0);
+        margin: 3rem auto;
+        max-width: 72rem;
+        padding: 0 1.25rem;
       }
-
+      details {
+        font-size: 0.95rem;
+        max-width: 58rem;
+      }
       esp-web-install-button {
         display: block;
         margin-top: 0.5rem;
       }
-
       footer {
-        font-size: 0.9rem;
-        margin-top: 3rem;
+        color: light-dark(#526072, #a7b4c5);
+        font-size: 0.85rem;
+        margin-top: 2rem;
+        max-width: 58rem;
       }
-
       h1 {
+        font-size: clamp(1.8rem, 5vw, 2.5rem);
         letter-spacing: -0.04em;
         line-height: 1.2;
+        margin-bottom: 0.5rem;
       }
-
       input {
         font: inherit;
+        max-width: 100%;
       }
-
       label {
-        display: inline-block;
-        margin: 1rem 1.5rem 1rem 0;
+        display: block;
+        font-weight: 600;
+        min-width: 0;
       }
-
       select {
+        background: light-dark(#fff, #11161d);
+        border: 1px solid #8888;
+        border-radius: 0.4rem;
+        color: inherit;
         display: block;
         font: inherit;
-        max-width: 100%;
-        padding: 0.4rem;
+        font-weight: 400;
+        margin-top: 0.5rem;
+        padding: 0.7rem;
+        width: 100%;
       }
-
+      select:focus-visible,
+      summary:focus-visible {
+        outline: 2px solid light-dark(#075caf, #93c5fd);
+        outline-offset: 3px;
+      }
+      summary {
+        cursor: pointer;
+        font-weight: 600;
+      }
       table {
         border-collapse: collapse;
+        font-size: 0.9rem;
         text-align: left;
         width: 100%;
       }
-
       td a {
         display: block;
         overflow-wrap: anywhere;
       }
-
+      th {
+        background: light-dark(#f6f8fa, #1b222c);
+        white-space: nowrap;
+      }
       th,
       td {
-        border-bottom: 1px solid #8886;
-        padding: 0.8rem 0.5rem;
+        border-bottom: 1px solid #8883;
+        padding: 1rem;
         vertical-align: top;
+      }
+      tr:last-child td {
+        border-bottom: 0;
       }
     </style>
   </head>
@@ -88,20 +136,29 @@
         <a href="https://github.com/usetrmnl/trmnl-firmware">TRMNL firmware</a>.
       </p>
       <p>
-        Choose a release and your exact device. Full-flash images include the
-        bootloader and partition table. Application binaries require an existing
-        compatible installation.
+        Choose a release and your device to download firmware or install it over
+        USB.
       </p>
-      <p>
-        To flash over USB, connect your device with a data cable and open this
-        page in desktop Chrome or Edge. Installing may erase device settings.
-        Check your device model before flashing: chip detection cannot identify
-        the board.
-      </p>
-      <label for="release"
-        >Release<select id="release" disabled></select
-      ></label>
-      <label for="target">Target<select id="target" disabled></select></label>
+      <details>
+        <summary>Before You Flash</summary>
+        <p>
+          Use a USB data cable and a browser with Web Serial support, such as
+          desktop Chrome or Edge. Check your device model: chip detection cannot
+          identify the board. Installing may erase device settings.
+        </p>
+        <p>
+          Full-flash images include the bootloader and partition table.
+          Application binaries require an existing compatible installation. For
+          older releases, download the full-flash image and select it when
+          prompted.
+        </p>
+      </details>
+      <div class="controls">
+        <label for="release"
+          >Release<select id="release" disabled></select
+        ></label>
+        <label for="target">Target<select id="target" disabled></select></label>
+      </div>
       <p id="status" role="status">Loading releases…</p>
       <p id="source"></p>
       <div class="scroll">
@@ -129,6 +186,12 @@
       const status = document.querySelector("#status");
       const table = document.querySelector("table");
       const target = document.querySelector("#target");
+      const date = (value) =>
+        new Date(value).toLocaleDateString("en-AU", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        });
       const link = (text, url) =>
         Object.assign(document.createElement("a"), {
           href: url,
@@ -222,8 +285,13 @@
         if (!releases.length) {
           status.textContent = "No firmware releases available yet.";
         } else {
-          for (const item of releases)
-            release.add(new Option(item.tag, item.tag));
+          for (const [index, item] of releases.entries()) {
+            const built = item.targets.filter(
+              (result) => result.status === "success",
+            ).length;
+            const label = `${item.tag}${index === 0 ? " · Latest" : ""} · ${date(item.published_at)} · ${built}/${item.targets.length} Built`;
+            release.add(new Option(label, item.tag));
+          }
           release.disabled = target.disabled = false;
           function render() {
             const item = releases.find((item) => item.tag === release.value);
@@ -241,19 +309,30 @@
             for (const result of results) {
               const row = body.insertRow();
               row.insertCell().textContent = result.target;
-              row.insertCell().textContent =
+              const build = row.insertCell();
+              build.className =
+                result.status === "success" ? "built" : "failed";
+              build.textContent =
                 result.status === "success" ? "Built" : "Failed";
               const downloads = row.insertCell();
               for (const file of result.files) {
-                const anchor = link(file.name, file.url);
-                anchor.title = `SHA-256: ${file.sha256}`;
+                const name = file.name.endsWith("-full-flash.bin")
+                  ? "Full Flash (.bin)"
+                  : "Application (.bin)";
+                const anchor = link(name, file.url);
+                anchor.title = `${file.name}\nSHA-256: ${file.sha256}`;
                 downloads.append(anchor);
               }
               if (!result.files.length)
                 downloads.append(link("See Build Logs", item.run));
               flashing(row.insertCell(), item, result);
             }
-            status.textContent = `${results.length} targets · ${item.tag} · source ${item.commit.slice(0, 12)}`;
+            const built = results.filter(
+              (result) => result.status === "success",
+            ).length;
+            status.textContent = `${built} built · ${results.length - built} failed · ${results.length} targets · Source ${item.commit.slice(0, 12)}`;
+            if (item.updated_at)
+              status.append(` · Files updated ${date(item.updated_at)}`);
             table.hidden = false;
           }
           function chooseRelease() {
@@ -262,7 +341,17 @@
             for (const result of releases.find(
               (item) => item.tag === release.value,
             ).targets) {
-              target.add(new Option(result.target, result.target));
+              const availability =
+                result.status !== "success"
+                  ? "Failed"
+                  : result.flash?.path
+                    ? "Built · USB Flashing"
+                    : result.flash
+                      ? "Built · File Flashing"
+                      : "Built · Downloads Only";
+              target.add(
+                new Option(`${result.target} · ${availability}`, result.target),
+              );
             }
             if ([...target.options].some((option) => option.value === previous))
               target.value = previous;
