@@ -19,6 +19,11 @@
         color: light-dark(#166534, #86efac);
         font-weight: 600;
       }
+      .built a,
+      .failed a {
+        color: inherit;
+      }
+
       .controls {
         background: light-dark(#f6f8fa, #1b222c);
         border: 1px solid #8884;
@@ -121,7 +126,7 @@
       td {
         border-bottom: 1px solid #8883;
         padding: 1rem;
-        vertical-align: top;
+        vertical-align: middle;
       }
       tr:last-child td {
         border-bottom: 0;
@@ -312,8 +317,12 @@
               const build = row.insertCell();
               build.className =
                 result.status === "success" ? "built" : "failed";
-              build.textContent =
-                result.status === "success" ? "Built" : "Failed";
+              build.append(
+                link(
+                  result.status === "success" ? "Built" : "Failed",
+                  item.run,
+                ),
+              );
               const downloads = row.insertCell();
               for (const file of result.files) {
                 const name = file.name.endsWith("-full-flash.bin")
