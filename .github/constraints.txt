@@ -1,4 +1,0 @@
-# ESP-IDF platforms using idf-component-manager 2.0 need pre-2.11 Pydantic.
-# https://github.com/espressif/idf-component-manager/issues/84
-pydantic==2.10.6
-pydantic-settings==2.8.1

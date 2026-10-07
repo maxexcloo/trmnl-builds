@@ -13,16 +13,10 @@ jobs:
       matrix:
         include:
           - tag: v1.8.17
-            target: CrowPanel42
-            patched: true
-          - tag: v1.8.17
-            target: seeed_xiao_esp32s3
-            patched: true
-          - tag: v1.8.17
             target: TRMNL_X_EPDIY
-            patched: false
-          - tag: v1.8.16
-            target: TRMNL_X_PAPERS3
+            patched: true
+          - tag: v1.8.17
+            target: esp32-c5-devkitc-1
             patched: true
     steps:
       - name: Checkout
@@ -55,5 +49,4 @@ jobs:
         run: pio run -e "$TARGET"
         env:
           INCLUDE_GIT_HASH_IN_VERSION_NUMBER: "false"
-          PIP_CONSTRAINT: ${{ github.workspace }}/.github/constraints.txt
           TARGET: ${{ matrix.target }}

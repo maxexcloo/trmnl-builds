@@ -1,0 +1,20 @@
+--- a/platformio.ini
++++ b/platformio.ini
+@@ -312,7 +312,7 @@
+ [env:TRMNL_X_EPDIY]
+ board = esp32s3_n16r8
+ board_build.esp-idf.sdkconfig_path = sdkconfigs/sdkconfig.${this.__env__}
+-platform = https://github.com/pioarduino/platform-espressif32/releases/download/53.03.13/platform-espressif32.zip
++platform = https://github.com/pioarduino/platform-espressif32/releases/download/55.03.37/platform-espressif32.zip
+ board_build.f_cpu = 240000000L
+ board_build.f_flash   = 80000000L
+ board_build.flash_mode = qio
+@@ -342,7 +342,7 @@
+ lib_ldf_mode = deep
+ lib_deps =
+ 	${deps_app.lib_deps}
+-    https://github.com/bitbank2/FastEPD/archive/refs/tags/1.4.6.zip
++    https://github.com/bitbank2/FastEPD.git#9a84c35e52849f9f22d2a7ad5231ef501be49e04
+ 
+ lib_ignore = bb_epaper
+ 

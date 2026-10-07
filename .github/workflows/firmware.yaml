@@ -66,7 +66,7 @@ jobs:
         run: |
           uv sync --locked
           pio project config --project-dir upstream --json-output > config.json
-          python .github/scripts/firmware.py discover config.json --source upstream
+          python .github/scripts/firmware.py discover config.json
       - name: Upload Source
         if: steps.plan.outputs.tag != ''
         uses: actions/upload-artifact@v7
@@ -121,7 +121,6 @@ jobs:
         run: pio run -e "$TARGET"
         env:
           INCLUDE_GIT_HASH_IN_VERSION_NUMBER: "false"
-          PIP_CONSTRAINT: ${{ github.workspace }}/.github/constraints.txt
           TARGET: ${{ matrix.target }}
       - name: Collect Result
         if: always()
