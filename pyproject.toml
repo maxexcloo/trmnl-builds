@@ -4,7 +4,7 @@ requires-python = ">=3.13,<3.14"
 version = "0.0.0"
 dependencies = [
     "esptool==5.4.0",
-    "platformio==6.1.19",
+    "platformio==6.2.0",
 ]
 
 [tool.uv]
