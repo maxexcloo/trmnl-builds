@@ -72,13 +72,6 @@ def catalogue():
 
 def discover(path):
     config = json.loads(path.read_text())
-    device_pattern = re.compile(r"(?:BOARD_[A-Z0-9_]+|DEVICE_MODEL)(?:=|\b)")
-    # Early releases select hardware by board alone, before device flags existed.
-    legacy = not any(
-        device_pattern.search(str(dict(pairs).get("build_flags", "")))
-        for section, pairs in config
-        if section.startswith("env:")
-    )
     targets = []
     skipped = []
     for section, pairs in config:
@@ -88,12 +81,8 @@ def discover(path):
         options = dict(pairs)
         flags = str(options.get("build_flags", ""))
         # Base environments have no device selection; tests replace the application.
-        device = device_pattern.search(flags)
-        if (
-            options.get("board")
-            and (device or legacy)
-            and not options.get("test_build_src")
-        ):
+        device = re.search(r"(?:BOARD_[A-Z0-9_]+|DEVICE_MODEL)(?:=|\b)", flags)
+        if options.get("board") and device and not options.get("test_build_src"):
             if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", name):
                 raise ValueError(f"Unsupported target name: {name!r}")
             targets.append(name)
