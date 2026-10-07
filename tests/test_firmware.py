@@ -163,14 +163,14 @@ class FirmwareTests(unittest.TestCase):
             self.assertTrue(result["patched"])
             self.assertEqual(result["target"], "hardware-patched")
 
-    def test_polling_bootstraps_latest_then_catches_every_missing_release(self):
+    def test_polling_builds_only_the_latest_missing_release(self):
         upstream = [
             {"tag_name": f"v{i}", "published_at": f"2026-10-0{i}", "prerelease": False}
             for i in range(1, 5)
         ]
         for owned, expected in [
             ([], "v4"),
-            ([{"tag_name": "v1"}], "v2"),
+            ([{"tag_name": "v1"}], "v4"),
             ([{"tag_name": "v4"}], ""),
         ]:
             with (

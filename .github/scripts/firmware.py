@@ -220,15 +220,9 @@ def plan(tag):
             raise ValueError("Choose a published, stable upstream release tag")
         selected = matches[0]
     else:
-        known = [release for release in upstream if release["tag_name"] in published]
-        baseline = known[0]["published_at"] if known else upstream[-1]["published_at"]
-        pending = [
-            release
-            for release in upstream
-            if release["published_at"] >= baseline
-            and release["tag_name"] not in published
-        ]
-        selected = pending[0] if pending else None
+        selected = upstream[-1] if upstream else None
+        if selected and selected["tag_name"] in published:
+            selected = None
     tag = selected["tag_name"] if selected else ""
     if tag and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", tag):
         raise ValueError(f"Unsupported release tag: {tag!r}")

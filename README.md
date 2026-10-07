@@ -17,8 +17,9 @@ desktop Chrome or Edge, and connect the device with a USB data cable.
 Recent images can be flashed directly; older images can be downloaded and selected
 in the installer, which verifies their checksum before flashing.
 
-Actions checks hourly for new stable releases. To rebuild or backfill a release,
-use **Actions → Firmware → Run Workflow** and enter its tag.
+Actions checks hourly and builds only the newest stable release when it is missing.
+To rebuild a release manually, use **Actions → Firmware → Run Workflow** and enter
+its tag.
 Downloads, source, checksums and build results are available in
 [Releases](https://github.com/maxexcloo/trmnl-builds/releases).
 
