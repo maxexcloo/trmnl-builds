@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-spec = importlib.util.spec_from_file_location("firmware", Path(__file__).parents[1] / "scripts/firmware.py")
+spec = importlib.util.spec_from_file_location("firmware", Path(__file__).parents[1] / ".github/scripts/firmware.py")
 firmware = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(firmware)
 

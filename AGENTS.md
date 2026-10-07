@@ -5,7 +5,7 @@
 - Discover targets from each upstream release; generate the catalogue from build
   results. Do not maintain target or release lists or patch upstream firmware.
 - Keep firmware execution in read-only jobs and publishing in a separate job.
-- Keep orchestration in `.github/workflows/` and `scripts/firmware.py`.
+- Keep orchestration in `.github/workflows/` and `.github/scripts/firmware.py`.
 - Keep the Pages app build-free, using ESP Web Tools, in `site/index.html`.
 - Keep the README focused on purpose and general usage. Keep only `AGENTS.md` and
   `README.md` as root Markdown files.

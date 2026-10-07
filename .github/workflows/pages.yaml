@@ -2,7 +2,7 @@ name: Pages
 on:
   push:
     branches: [main]
-    paths: ['.github/workflows/pages.yaml', 'scripts/firmware.py', 'site/**']
+    paths: ['.github/workflows/pages.yaml', '.github/scripts/firmware.py', 'site/**']
   workflow_call:
   workflow_dispatch:
 permissions:
@@ -28,7 +28,7 @@ jobs:
       - name: Generate Catalogue
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python scripts/firmware.py catalogue
+        run: python .github/scripts/firmware.py catalogue
       - name: Configure Pages
         uses: actions/configure-pages@v6
       - name: Upload Pages
