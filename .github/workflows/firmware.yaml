@@ -1,4 +1,5 @@
 name: Firmware
+run-name: Firmware · ${{ inputs.tag || 'New Releases' }}
 on:
   schedule:
     - cron: "23 * * * *"
@@ -12,6 +13,7 @@ permissions:
 concurrency:
   cancel-in-progress: false
   group: firmware
+  queue: max
 jobs:
   discover:
     name: Discover

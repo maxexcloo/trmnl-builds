@@ -13,6 +13,7 @@ permissions:
 concurrency:
   cancel-in-progress: false
   group: pages
+  queue: max
 jobs:
   deploy:
     name: Deploy
