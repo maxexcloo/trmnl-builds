@@ -36,3 +36,6 @@ jobs:
           node --check /tmp/site.mjs
       - name: Validate Workflows
         uses: docker://rhysd/actionlint:1.7.12
+        # Native concurrency queues are supported by GitHub but not actionlint 1.7.12.
+        with:
+          args: -ignore 'unexpected key "queue" for "concurrency" section'
