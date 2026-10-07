@@ -4,7 +4,7 @@ Builds firmware from [TRMNL](https://github.com/usetrmnl/trmnl-firmware) release
 using GitHub Actions, with downloads and browser USB flashing on GitHub Pages.
 Targets are discovered from each release's upstream configuration.
 
-[Open the Firmware Installer](https://maxexcloo.github.io/trmnl-builds/).
+[Open the Firmware Installer](https://maxexcloo.github.io/trmnl-builds/)
 
 ## Usage
 
