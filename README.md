@@ -4,6 +4,13 @@ Builds firmware from [TRMNL](https://github.com/usetrmnl/trmnl-firmware) release
 using GitHub Actions, with downloads and browser USB flashing on GitHub Pages.
 Targets are discovered from each release's upstream configuration.
 
+Builds preserve FastEPD's native Paper S3 greyscale waveform instead of the
+shared TRMNL override, to address faint greyscale output. This adjustment is
+conditional on the Paper S3 board flag and checked against upstream source at
+build time. Unexpected source changes stop the build for review. The attached
+source archive contains the exact prepared source used for every target.
+The contrast improvement still needs verification on hardware.
+
 [Open the Firmware Installer](https://maxexcloo.github.io/trmnl-builds/)
 
 ## Usage

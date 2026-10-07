@@ -125,7 +125,8 @@ def manifest(tag, sha, targets):
     notes = (
         f"Community builds of [{UPSTREAM} {tag}](https://github.com/{UPSTREAM}/tree/{sha}).\n\n"
         f"Upstream commit: `{sha}`. [Build logs]({manifest['run']}).\n\n"
-        "Firmware is GPL-3.0; upstream source is attached. Application binaries are not full-flash images.\n\n"
+        "Firmware is GPL-3.0; the exact prepared source is attached, including any "
+        "local Paper S3 waveform adjustment. Application binaries are not full-flash images.\n\n"
         + (
             "Failed targets: " + ", ".join(failed)
             if failed
@@ -213,6 +214,38 @@ def plan(tag):
     output("tag", tag)
 
 
+def prepare(path):
+    """Keep the Paper S3's native waveform when upstream overrides it globally."""
+    display = path / "src/display.cpp"
+    source = display.read_text()
+    original = (
+        "    int rc = bbep.setCustomMatrix(u8_graytable, sizeof(u8_graytable));\n"
+        '    Log_info("%s [%d]: setCustomMatrix returned %d\\r\\n", __FILE__, __LINE__, rc);\n'
+    )
+    replacement = (
+        "#ifndef BOARD_TRMNL_X_PAPERS3\n"
+        "    // Preserve FastEPD's panel-specific Paper S3 greyscale waveform.\n"
+        + original
+        + "#endif\n"
+    )
+    if source.count(replacement) == 1 and source.count("bbep.setCustomMatrix(") == 1:
+        print("Paper S3 waveform adjustment already applied")
+        return
+    if "u8_graytable" not in source and "setCustomMatrix" not in source:
+        print("No shared greyscale override found; source unchanged")
+        return
+    if source.count(original) != 1 or source.count("bbep.setCustomMatrix(") != 1:
+        raise ValueError(
+            "Upstream greyscale override changed; review the Paper S3 adjustment"
+        )
+    if "BOARD_TRMNL_X_PAPERS3" not in (path / "platformio.ini").read_text():
+        raise ValueError(
+            "Upstream Paper S3 board flag changed; review the waveform adjustment"
+        )
+    display.write_text(source.replace(original, replacement, 1))
+    print("Preserved the native Paper S3 greyscale waveform; other boards unchanged")
+
+
 def releases(repo):
     pages = json.loads(
         run("gh", "api", "--paginate", "--slurp", f"repos/{repo}/releases?per_page=100")
@@ -230,6 +263,7 @@ if __name__ == "__main__":
     commands.add_parser("catalogue")
     commands.add_parser("discover").add_argument("path", type=Path)
     commands.add_parser("plan").add_argument("tag", nargs="?", default="")
+    commands.add_parser("prepare").add_argument("path", type=Path)
     package = commands.add_parser("pack")
     package.add_argument("target")
     package.add_argument("outcome")

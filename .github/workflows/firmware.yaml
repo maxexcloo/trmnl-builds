@@ -46,6 +46,10 @@ jobs:
         if: steps.plan.outputs.tag != ''
         run: |
           echo "sha=$(git -C upstream rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Prepare Firmware Source
+        if: steps.plan.outputs.tag != ''
+        run: |
+          python3 .github/scripts/firmware.py prepare upstream
           tar --exclude=.git -czf upstream-source.tar.gz -C upstream .
       - name: Set Up Python & uv
         if: steps.plan.outputs.tag != ''
@@ -94,6 +98,12 @@ jobs:
           ref: ${{ needs.discover.outputs.sha }}
           repository: usetrmnl/trmnl-firmware
           submodules: recursive
+      - name: Download Prepared Source
+        uses: actions/download-artifact@v8
+        with:
+          name: source
+      - name: Extract Prepared Source
+        run: tar -xzf upstream-source.tar.gz -C upstream
       - name: Set Up Python & uv
         uses: astral-sh/setup-uv@v10.2.0
         with:

@@ -3,7 +3,9 @@
 ## Structure
 
 - Discover targets from each upstream release; generate the catalogue from build
-  results. Do not maintain target or release lists or patch upstream firmware.
+  results. Do not maintain target or release lists. The guarded Paper S3
+  waveform adjustment is the only permitted upstream firmware patch; fail when
+  its expected source changes and build from the published prepared source.
 - Keep firmware execution in read-only jobs and publishing in a separate job.
 - Keep orchestration in `.github/workflows/` and `.github/scripts/firmware.py`.
 - Keep the Pages app build-free, using ESP Web Tools, in `site/index.html`.

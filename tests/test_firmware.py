@@ -46,6 +46,57 @@ class FirmwareTests(unittest.TestCase):
                 json.loads(output.call_args.args[1]), ["hardware", "model"]
             )
 
+    def test_prepare_preserves_native_waveform_and_is_idempotent(self):
+        original = (
+            "    int rc = bbep.setCustomMatrix(u8_graytable, sizeof(u8_graytable));\n"
+            '    Log_info("%s [%d]: setCustomMatrix returned %d\\r\\n", __FILE__, __LINE__, rc);\n'
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "src").mkdir()
+            display = root / "src/display.cpp"
+            display.write_text("before\n" + original + "after\n")
+            (root / "platformio.ini").write_text("-D BOARD_TRMNL_X_PAPERS3\n")
+            with contextlib.redirect_stdout(io.StringIO()):
+                firmware.prepare(root)
+                prepared = display.read_text()
+                firmware.prepare(root)
+            self.assertEqual(display.read_text(), prepared)
+            self.assertIn("#ifndef BOARD_TRMNL_X_PAPERS3\n", prepared)
+            self.assertIn(original + "#endif\n", prepared)
+            self.assertTrue(prepared.startswith("before\n"))
+            self.assertTrue(prepared.endswith("after\n"))
+            display.write_text(original)
+            (root / "platformio.ini").write_text("-D RENAMED_PAPER_BOARD\n")
+            with self.assertRaisesRegex(ValueError, "board flag changed"):
+                firmware.prepare(root)
+            self.assertEqual(display.read_text(), original)
+
+    def test_prepare_rejects_changed_or_duplicate_overrides_without_writing(self):
+        for source in [
+            "bbep.setCustomMatrix(u8_graytable, new_size);",
+            "bbep.setCustomMatrix(u8_graytable, size);\n" * 2,
+            "const uint8_t u8_graytable[] = {};",
+        ]:
+            with self.subTest(source=source), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                (root / "src").mkdir()
+                display = root / "src/display.cpp"
+                display.write_text(source)
+                with self.assertRaisesRegex(ValueError, "Upstream greyscale override changed"):
+                    firmware.prepare(root)
+                self.assertEqual(display.read_text(), source)
+
+    def test_prepare_skips_source_without_shared_override(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "src").mkdir()
+            display = root / "src/display.cpp"
+            display.write_text("bbep.fullUpdate();\n")
+            with contextlib.redirect_stdout(io.StringIO()):
+                firmware.prepare(root)
+            self.assertEqual(display.read_text(), "bbep.fullUpdate();\n")
+
     def test_polling_bootstraps_latest_then_catches_every_missing_release(self):
         upstream = [
             {"tag_name": f"v{i}", "published_at": f"2026-10-0{i}", "prerelease": False}
