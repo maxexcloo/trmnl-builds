@@ -4,7 +4,7 @@
 
 - Discover targets from each upstream release; generate the catalogue from build
   results. Do not maintain target or release lists. Keep reviewed patches in
-  `.github/patches/<upstream-target>/*.patch`, applied in filename order.
+  `patches/<upstream-target>/*.patch`, applied in filename order.
 - Always build unchanged upstream targets. Discover separate patched variants
   from patch directories; failures must not block original builds. Publish the
   exact source archive for each variant. Do not fetch patches at build time.

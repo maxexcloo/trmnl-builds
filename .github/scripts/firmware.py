@@ -8,7 +8,7 @@ import re
 import subprocess
 from pathlib import Path
 
-PATCHES = Path(__file__).resolve().parents[1] / "patches"
+PATCHES = Path(__file__).resolve().parents[2] / "patches"
 UPSTREAM = "usetrmnl/trmnl-firmware"
 
 

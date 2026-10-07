@@ -22,8 +22,10 @@ use **Actions → Firmware → Run Workflow** and enter its tag.
 Downloads, source, checksums and build results are available in
 [Releases](https://github.com/maxexcloo/trmnl-builds/releases).
 
-Targets without a supported full-flash image offer downloads only. Installing may
-erase device settings; a successful build does not guarantee hardware compatibility.
+Targets without a supported full-flash image offer downloads only. Full-flash
+installation overwrites saved device settings, even without a separate erase step.
+Use a compatible application-only OTA update to retain settings. A successful
+build does not guarantee hardware compatibility.
 
 ## Development
 

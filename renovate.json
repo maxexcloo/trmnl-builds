@@ -1,0 +1,33 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "dependencyDashboard": false,
+  "extends": ["config:recommended"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "datasourceTemplate": "npm",
+      "description": "Update ESP Web Tools in the installer",
+      "managerFilePatterns": ["/^site/index\\.html$/"],
+      "matchStrings": [
+        "https://unpkg\\.com/(?<depName>esp-web-tools)@(?<currentValue>[^/\\s\"]+)"
+      ]
+    }
+  ],
+  "packageRules": [
+    {
+      "allowedVersions": "!=6.2.0",
+      "description": "Exclude PlatformIO 6.2.0: pioarduino/platform-espressif32#529",
+      "matchPackageNames": ["platformio"]
+    },
+    {
+      "description": "Group Minor Updates",
+      "groupName": "Minor Dependencies",
+      "matchUpdateTypes": ["minor"]
+    },
+    {
+      "description": "Group Patch & Pin Updates",
+      "groupName": "Patch Dependencies",
+      "matchUpdateTypes": ["patch", "pin", "digest"]
+    }
+  ]
+}
