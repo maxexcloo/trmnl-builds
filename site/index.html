@@ -1,144 +1,281 @@
 <!doctype html>
 <html lang="en-AU">
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TRMNL Firmware Installer</title>
-<script type="module" src="https://unpkg.com/esp-web-tools@10.4.0/dist/web/install-button.js?module"></script>
-<style>
-  :root { color-scheme: light dark; font: 16px/1.6 system-ui, sans-serif; }
-  body { max-width: 68rem; margin: 4rem auto; padding: 0 1.5rem; }
-  h1 { line-height: 1.2; letter-spacing: -.04em; }
-  a { color: light-dark(#075caf, #84bcff); }
-  label { display: inline-block; margin: 1rem 1.5rem 1rem 0; }
-  select { display: block; font: inherit; max-width: 100%; padding: .4rem; }
-  table { border-collapse: collapse; width: 100%; text-align: left; }
-  th, td { border-bottom: 1px solid #8886; padding: .8rem .5rem; vertical-align: top; }
-  td a { display: block; overflow-wrap: anywhere; }
-  input { font: inherit; }
-  esp-web-install-button { display: block; margin-top: .5rem; }
-  .scroll { overflow-x: auto; }
-  footer { margin-top: 3rem; font-size: .9rem; }
-</style>
-<main>
-  <h1>TRMNL Firmware Installer</h1>
-  <p>Community builds of <a href="https://github.com/usetrmnl/trmnl-firmware">TRMNL firmware</a>, straight from upstream release tags.</p>
-  <p>Choose your exact hardware target. Application binaries need an existing compatible installation; full-flash images include the bootloader and partition table.</p>
-  <p>Connect your device with a USB data cable and use a browser with Web Serial support, such as desktop Chrome or Edge. Installing may erase device settings. Select the exact board: chip detection cannot distinguish boards using the same chip.</p>
-  <label>Release <select id="release" disabled></select></label>
-  <label>Target <select id="target" disabled></select></label>
-  <p id="status" role="status">Loading releases…</p>
-  <p id="source"></p>
-  <div class="scroll"><table hidden>
-    <thead><tr><th scope="col">Target</th><th scope="col">Build</th><th scope="col">Downloads</th><th scope="col">USB Flashing</th></tr></thead>
-    <tbody></tbody>
-  </table></div>
-</main>
-<footer>Unofficial builds. Firmware is GPL-3.0. Each release includes upstream source, build results and SHA-256 checksums. A successful build has not necessarily been tested on hardware.</footer>
-<script type="module">
-  const release = document.querySelector('#release');
-  const target = document.querySelector('#target');
-  const status = document.querySelector('#status');
-  const source = document.querySelector('#source');
-  const table = document.querySelector('table');
-  const body = document.querySelector('tbody');
-  const link = (text, url) => Object.assign(document.createElement('a'), { textContent: text, href: url });
-  let objectUrls = [];
-  function installer(item, result, binaryUrl) {
-    const manifest = {
-      name: `TRMNL ${result.target}`, version: item.tag,
-      new_install_prompt_erase: true, new_install_improv_wait_time: 0,
-      builds: [{ chipFamily: result.flash.chipFamily, parts: [{ path: binaryUrl, offset: 0 }] }]
-    };
-    const url = URL.createObjectURL(new Blob([JSON.stringify(manifest)], { type: 'application/json' }));
-    objectUrls.push(url);
-    const button = document.createElement('esp-web-install-button');
-    button.setAttribute('manifest', url);
-    return button;
-  }
-  function flashing(cell, item, result) {
-    if (!result.flash) {
-      cell.textContent = result.status === 'success' ? 'No supported full-flash image' : 'Build unavailable';
-      return;
-    }
-    if (result.flash.path) {
-      cell.append(installer(item, result, new URL(result.flash.path, location.href).href));
-      return;
-    }
-    const label = document.createElement('label');
-    label.textContent = 'Download the full-flash image, then select it here:';
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.bin';
-    label.append(input);
-    const message = document.createElement('span');
-    message.setAttribute('role', 'status');
-    cell.append(label, message);
-    input.addEventListener('change', async () => {
-      cell.querySelector('esp-web-install-button')?.remove();
-      const file = input.files[0];
-      if (!file) return;
-      try {
-        message.textContent = 'Checking image…';
-        if (file.size !== result.flash.size) throw new Error('Image size does not match this target and release.');
-        const data = await file.arrayBuffer();
-        const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256', data))]
-          .map(byte => byte.toString(16).padStart(2, '0')).join('');
-        const expected = result.files.find(file => file.name === result.flash.file).sha256;
-        if (hash !== expected) throw new Error('Image does not match this target and release.');
-        const url = URL.createObjectURL(new Blob([data]));
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TRMNL Firmware Installer</title>
+    <script
+      type="module"
+      src="https://unpkg.com/esp-web-tools@10.4.0/dist/web/install-button.js?module"
+    ></script>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font:
+          16px/1.6 system-ui,
+          sans-serif;
+      }
+      body {
+        max-width: 68rem;
+        margin: 4rem auto;
+        padding: 0 1.5rem;
+      }
+      h1 {
+        line-height: 1.2;
+        letter-spacing: -0.04em;
+      }
+      a {
+        color: light-dark(#075caf, #84bcff);
+      }
+      label {
+        display: inline-block;
+        margin: 1rem 1.5rem 1rem 0;
+      }
+      select {
+        display: block;
+        font: inherit;
+        max-width: 100%;
+        padding: 0.4rem;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        text-align: left;
+      }
+      th,
+      td {
+        border-bottom: 1px solid #8886;
+        padding: 0.8rem 0.5rem;
+        vertical-align: top;
+      }
+      td a {
+        display: block;
+        overflow-wrap: anywhere;
+      }
+      input {
+        font: inherit;
+      }
+      esp-web-install-button {
+        display: block;
+        margin-top: 0.5rem;
+      }
+      .scroll {
+        overflow-x: auto;
+      }
+      footer {
+        margin-top: 3rem;
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>TRMNL Firmware Installer</h1>
+      <p>
+        Download and install
+        <a href="https://github.com/usetrmnl/trmnl-firmware">TRMNL firmware</a>.
+      </p>
+      <p>
+        Choose a release and your exact device. Full-flash images include the
+        bootloader and partition table. Application binaries require an existing
+        compatible installation.
+      </p>
+      <p>
+        To flash over USB, connect your device with a data cable and open this
+        page in desktop Chrome or Edge. Installing may erase device settings.
+        Check your device model before flashing: chip detection cannot identify
+        the board.
+      </p>
+      <label
+        >Release
+        <select id="release" disabled></select
+      ></label>
+      <label
+        >Target
+        <select id="target" disabled></select
+      ></label>
+      <p id="status" role="status">Loading releases…</p>
+      <p id="source"></p>
+      <div class="scroll">
+        <table hidden>
+          <thead>
+            <tr>
+              <th scope="col">Target</th>
+              <th scope="col">Build</th>
+              <th scope="col">Downloads</th>
+              <th scope="col">USB Flashing</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </main>
+    <footer>
+      Unofficial builds, not verified on hardware. Releases include source code,
+      build results and SHA-256 checksums. Firmware is licensed under GPL-3.0.
+    </footer>
+    <script type="module">
+      const release = document.querySelector("#release");
+      const target = document.querySelector("#target");
+      const status = document.querySelector("#status");
+      const source = document.querySelector("#source");
+      const table = document.querySelector("table");
+      const body = document.querySelector("tbody");
+      const link = (text, url) =>
+        Object.assign(document.createElement("a"), {
+          textContent: text,
+          href: url,
+        });
+      let objectUrls = [];
+      function installer(item, result, binaryUrl) {
+        const manifest = {
+          name: `TRMNL ${result.target}`,
+          version: item.tag,
+          new_install_prompt_erase: true,
+          new_install_improv_wait_time: 0,
+          builds: [
+            {
+              chipFamily: result.flash.chipFamily,
+              parts: [{ path: binaryUrl, offset: 0 }],
+            },
+          ],
+        };
+        const url = URL.createObjectURL(
+          new Blob([JSON.stringify(manifest)], { type: "application/json" }),
+        );
         objectUrls.push(url);
-        message.textContent = 'Image verified. Ready to flash.';
-        cell.append(installer(item, result, url));
-      } catch (error) { message.textContent = error.message; }
-    });
-  }
-  try {
-    const response = await fetch('./catalogue.json');
-    if (!response.ok) throw new Error(`Catalogue returned ${response.status}`);
-    const releases = await response.json();
-    if (!releases.length) {
-      status.textContent = 'No releases built yet. The catalogue will appear after the first firmware build.';
-    } else {
-      for (const item of releases) release.add(new Option(item.tag, item.tag));
-      release.disabled = target.disabled = false;
-      function render() {
-        const item = releases.find(item => item.tag === release.value);
-        const results = item.targets.filter(result => !target.value || result.target === target.value);
-        source.replaceChildren(link('Release, Source & Checksums', item.url), ' · ', link('Build Logs', item.run));
-        objectUrls.forEach(url => URL.revokeObjectURL(url));
-        objectUrls = [];
-        body.replaceChildren();
-        for (const result of results) {
-          const row = body.insertRow();
-          row.insertCell().textContent = result.target;
-          row.insertCell().textContent = result.status === 'success' ? 'Built' : 'Failed';
-          const downloads = row.insertCell();
-          for (const file of result.files) {
-            const anchor = link(file.name, file.url);
-            anchor.title = `SHA-256: ${file.sha256}`;
-            downloads.append(anchor);
+        const button = document.createElement("esp-web-install-button");
+        button.setAttribute("manifest", url);
+        return button;
+      }
+      function flashing(cell, item, result) {
+        if (!result.flash) {
+          cell.textContent =
+            result.status === "success"
+              ? "No supported full-flash image"
+              : "Build unavailable";
+          return;
+        }
+        if (result.flash.path) {
+          cell.append(
+            installer(
+              item,
+              result,
+              new URL(result.flash.path, location.href).href,
+            ),
+          );
+          return;
+        }
+        const label = document.createElement("label");
+        label.textContent =
+          "Download the full-flash image, then select it here:";
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = ".bin";
+        label.append(input);
+        const message = document.createElement("span");
+        message.setAttribute("role", "status");
+        cell.append(label, message);
+        input.addEventListener("change", async () => {
+          cell.querySelector("esp-web-install-button")?.remove();
+          const file = input.files[0];
+          if (!file) return;
+          try {
+            message.textContent = "Checking image…";
+            if (file.size !== result.flash.size)
+              throw new Error(
+                "Image size does not match this target and release.",
+              );
+            const data = await file.arrayBuffer();
+            const hash = [
+              ...new Uint8Array(await crypto.subtle.digest("SHA-256", data)),
+            ]
+              .map((byte) => byte.toString(16).padStart(2, "0"))
+              .join("");
+            const expected = result.files.find(
+              (file) => file.name === result.flash.file,
+            ).sha256;
+            if (hash !== expected)
+              throw new Error("Image does not match this target and release.");
+            const url = URL.createObjectURL(new Blob([data]));
+            objectUrls.push(url);
+            message.textContent = "Image verified. Ready to flash.";
+            cell.append(installer(item, result, url));
+          } catch (error) {
+            message.textContent = error.message;
           }
-          if (!result.files.length) downloads.append(link('See Build Logs', item.run));
-          flashing(row.insertCell(), item, result);
-        }
-        status.textContent = `${results.length} targets · ${item.tag} · source ${item.commit.slice(0, 12)}`;
-        table.hidden = false;
+        });
       }
-      function chooseRelease() {
-        const previous = target.options.length ? target.value : 'TRMNL_X_PAPERS3';
-        target.replaceChildren(new Option('All Targets', ''));
-        for (const result of releases.find(item => item.tag === release.value).targets) {
-          target.add(new Option(result.target === 'TRMNL_X_PAPERS3' ? 'M5Stack Paper S3 (TRMNL_X_PAPERS3)' : result.target, result.target));
+      try {
+        const response = await fetch("./catalogue.json");
+        if (!response.ok)
+          throw new Error(`Catalogue returned ${response.status}`);
+        const releases = await response.json();
+        if (!releases.length) {
+          status.textContent = "No firmware releases available yet.";
+        } else {
+          for (const item of releases)
+            release.add(new Option(item.tag, item.tag));
+          release.disabled = target.disabled = false;
+          function render() {
+            const item = releases.find((item) => item.tag === release.value);
+            const results = item.targets.filter(
+              (result) => !target.value || result.target === target.value,
+            );
+            source.replaceChildren(
+              link("Release, Source & Checksums", item.url),
+              " · ",
+              link("Build Logs", item.run),
+            );
+            objectUrls.forEach((url) => URL.revokeObjectURL(url));
+            objectUrls = [];
+            body.replaceChildren();
+            for (const result of results) {
+              const row = body.insertRow();
+              row.insertCell().textContent = result.target;
+              row.insertCell().textContent =
+                result.status === "success" ? "Built" : "Failed";
+              const downloads = row.insertCell();
+              for (const file of result.files) {
+                const anchor = link(file.name, file.url);
+                anchor.title = `SHA-256: ${file.sha256}`;
+                downloads.append(anchor);
+              }
+              if (!result.files.length)
+                downloads.append(link("See Build Logs", item.run));
+              flashing(row.insertCell(), item, result);
+            }
+            status.textContent = `${results.length} targets · ${item.tag} · source ${item.commit.slice(0, 12)}`;
+            table.hidden = false;
+          }
+          function chooseRelease() {
+            const previous = target.options.length
+              ? target.value
+              : "TRMNL_X_PAPERS3";
+            target.replaceChildren(new Option("All Targets", ""));
+            for (const result of releases.find(
+              (item) => item.tag === release.value,
+            ).targets) {
+              target.add(
+                new Option(
+                  result.target === "TRMNL_X_PAPERS3"
+                    ? "M5Stack Paper S3 (TRMNL_X_PAPERS3)"
+                    : result.target,
+                  result.target,
+                ),
+              );
+            }
+            if ([...target.options].some((option) => option.value === previous))
+              target.value = previous;
+            render();
+          }
+          release.addEventListener("change", chooseRelease);
+          target.addEventListener("change", render);
+          chooseRelease();
         }
-        if ([...target.options].some(option => option.value === previous)) target.value = previous;
-        render();
+      } catch (error) {
+        status.textContent = `Could not load firmware releases. ${error.message}. Please try again later.`;
       }
-      release.addEventListener('change', chooseRelease);
-      target.addEventListener('change', render);
-      chooseRelease();
-    }
-  } catch (error) {
-    status.textContent = `Could not load firmware releases. ${error.message}. Please try again later.`;
-  }
-</script>
+    </script>
+  </body>
 </html>

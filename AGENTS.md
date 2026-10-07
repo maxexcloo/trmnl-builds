@@ -18,6 +18,8 @@
   add dependencies only for a concrete need.
 - Sort unordered entries alphabetically, with simple values before structured
   values. Preserve procedural, interface and priority order.
+- Format HTML, CSS and JavaScript with Prettier defaults. Keep user-facing wording
+  plain and direct; omit promotional phrases.
 - Use Australian English and `.yaml` for project-owned YAML files.
 - Use Title Case for headings, labels and Actions workflow, job and step names,
   with `&` instead of `And`. Keep prose in sentence case and preserve upstream names.
