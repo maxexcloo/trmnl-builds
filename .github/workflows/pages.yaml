@@ -10,8 +10,8 @@ permissions:
   id-token: write
   pages: write
 concurrency:
-  group: pages
   cancel-in-progress: false
+  group: pages
 jobs:
   deploy:
     runs-on: ubuntu-24.04
@@ -23,7 +23,7 @@ jobs:
         with:
           persist-credentials: false
           ref: main
-      - name: Generate catalogue
+      - name: Generate Catalogue
         env:
           GH_TOKEN: ${{ github.token }}
         run: python scripts/firmware.py catalogue

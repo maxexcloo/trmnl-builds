@@ -2,7 +2,7 @@
 <html lang="en-AU">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TRMNL firmware installer</title>
+<title>TRMNL Firmware Installer</title>
 <script type="module" src="https://unpkg.com/esp-web-tools@10.4.0/dist/web/install-button.js?module"></script>
 <style>
   :root { color-scheme: light dark; font: 16px/1.6 system-ui, sans-serif; }
@@ -20,7 +20,7 @@
   footer { margin-top: 3rem; font-size: .9rem; }
 </style>
 <main>
-  <h1>TRMNL firmware installer</h1>
+  <h1>TRMNL Firmware Installer</h1>
   <p>Community builds of <a href="https://github.com/usetrmnl/trmnl-firmware">TRMNL firmware</a>, straight from upstream release tags.</p>
   <p>Choose your exact hardware target. Application binaries need an existing compatible installation; full-flash images include the bootloader and partition table.</p>
   <p>Connect your device with a USB data cable and use a browser with Web Serial support, such as desktop Chrome or Edge. Installing may erase device settings. Select the exact board: chip detection cannot distinguish boards using the same chip.</p>
@@ -29,7 +29,7 @@
   <p id="status" role="status">Loading releases…</p>
   <p id="source"></p>
   <div class="scroll"><table hidden>
-    <thead><tr><th scope="col">Target</th><th scope="col">Build</th><th scope="col">Downloads</th><th scope="col">USB flashing</th></tr></thead>
+    <thead><tr><th scope="col">Target</th><th scope="col">Build</th><th scope="col">Downloads</th><th scope="col">USB Flashing</th></tr></thead>
     <tbody></tbody>
   </table></div>
 </main>
@@ -104,7 +104,7 @@
       function render() {
         const item = releases.find(item => item.tag === release.value);
         const results = item.targets.filter(result => !target.value || result.target === target.value);
-        source.replaceChildren(link('Release, source & checksums', item.url), ' · ', link('Build logs', item.run));
+        source.replaceChildren(link('Release, Source & Checksums', item.url), ' · ', link('Build Logs', item.run));
         objectUrls.forEach(url => URL.revokeObjectURL(url));
         objectUrls = [];
         body.replaceChildren();
@@ -118,7 +118,7 @@
             anchor.title = `SHA-256: ${file.sha256}`;
             downloads.append(anchor);
           }
-          if (!result.files.length) downloads.append(link('See build logs', item.run));
+          if (!result.files.length) downloads.append(link('See Build Logs', item.run));
           flashing(row.insertCell(), item, result);
         }
         status.textContent = `${results.length} targets · ${item.tag} · source ${item.commit.slice(0, 12)}`;
@@ -126,7 +126,7 @@
       }
       function chooseRelease() {
         const previous = target.options.length ? target.value : 'TRMNL_X_PAPERS3';
-        target.replaceChildren(new Option('All targets', ''));
+        target.replaceChildren(new Option('All Targets', ''));
         for (const result of releases.find(item => item.tag === release.value).targets) {
           target.add(new Option(result.target === 'TRMNL_X_PAPERS3' ? 'M5Stack Paper S3 (TRMNL_X_PAPERS3)' : result.target, result.target));
         }

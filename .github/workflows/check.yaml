@@ -5,19 +5,24 @@ on:
     branches: [main]
 permissions:
   contents: read
+concurrency:
+  cancel-in-progress: true
+  group: check-${{ github.ref }}
 jobs:
   check:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: astral-sh/setup-uv@v10.2.0
         with:
           activate-environment: true
           python-version: '3.13'
       - run: uv sync --locked
-      - name: Test release planning and packaging
+      - name: Test Release Planning & Packaging
         run: python3 -m unittest discover -s tests
-      - name: Check browser JavaScript
+      - name: Check Browser JavaScript
         run: |
           python3 - <<'PYCODE' > /tmp/site.mjs
           import pathlib, re
@@ -25,5 +30,5 @@ jobs:
           print(re.search(r'<script type="module">(.*?)</script>', html, re.S)[1])
           PYCODE
           node --check /tmp/site.mjs
-      - name: Validate workflows
+      - name: Validate Workflows
         uses: docker://rhysd/actionlint:1.7.12

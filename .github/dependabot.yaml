@@ -1,14 +1,14 @@
 version: 2
 updates:
-  - package-ecosystem: github-actions
-    directory: /
+  - directory: /
+    package-ecosystem: github-actions
     groups:
       actions:
         patterns: ['*']
     schedule:
       interval: monthly
-  - package-ecosystem: uv
-    directory: /
+  - directory: /
+    package-ecosystem: uv
     groups:
       build-tools:
         patterns: ['*']
