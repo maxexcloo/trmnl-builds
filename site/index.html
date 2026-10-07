@@ -15,56 +15,68 @@
           16px/1.6 system-ui,
           sans-serif;
       }
-      body {
-        max-width: 68rem;
-        margin: 4rem auto;
-        padding: 0 1.5rem;
+
+      .scroll {
+        overflow-x: auto;
       }
-      h1 {
-        line-height: 1.2;
-        letter-spacing: -0.04em;
-      }
+
       a {
         color: light-dark(#075caf, #84bcff);
       }
+
+      body {
+        margin: 4rem auto;
+        max-width: 68rem;
+        padding: 0 1.5rem;
+      }
+
+      esp-web-install-button {
+        display: block;
+        margin-top: 0.5rem;
+      }
+
+      footer {
+        font-size: 0.9rem;
+        margin-top: 3rem;
+      }
+
+      h1 {
+        letter-spacing: -0.04em;
+        line-height: 1.2;
+      }
+
+      input {
+        font: inherit;
+      }
+
       label {
         display: inline-block;
         margin: 1rem 1.5rem 1rem 0;
       }
+
       select {
         display: block;
         font: inherit;
         max-width: 100%;
         padding: 0.4rem;
       }
+
       table {
         border-collapse: collapse;
-        width: 100%;
         text-align: left;
+        width: 100%;
       }
+
+      td a {
+        display: block;
+        overflow-wrap: anywhere;
+      }
+
       th,
       td {
         border-bottom: 1px solid #8886;
         padding: 0.8rem 0.5rem;
         vertical-align: top;
-      }
-      td a {
-        display: block;
-        overflow-wrap: anywhere;
-      }
-      input {
-        font: inherit;
-      }
-      esp-web-install-button {
-        display: block;
-        margin-top: 0.5rem;
-      }
-      .scroll {
-        overflow-x: auto;
-      }
-      footer {
-        margin-top: 3rem;
-        font-size: 0.9rem;
       }
     </style>
   </head>
@@ -86,14 +98,10 @@
         Check your device model before flashing: chip detection cannot identify
         the board.
       </p>
-      <label
-        >Release
-        <select id="release" disabled></select
+      <label for="release"
+        >Release<select id="release" disabled></select
       ></label>
-      <label
-        >Target
-        <select id="target" disabled></select
-      ></label>
+      <label for="target">Target<select id="target" disabled></select></label>
       <p id="status" role="status">Loading releases…</p>
       <p id="source"></p>
       <div class="scroll">
@@ -115,28 +123,28 @@
       build results and SHA-256 checksums. Firmware is licensed under GPL-3.0.
     </footer>
     <script type="module">
-      const release = document.querySelector("#release");
-      const target = document.querySelector("#target");
-      const status = document.querySelector("#status");
-      const source = document.querySelector("#source");
-      const table = document.querySelector("table");
       const body = document.querySelector("tbody");
+      const release = document.querySelector("#release");
+      const source = document.querySelector("#source");
+      const status = document.querySelector("#status");
+      const table = document.querySelector("table");
+      const target = document.querySelector("#target");
       const link = (text, url) =>
         Object.assign(document.createElement("a"), {
-          textContent: text,
           href: url,
+          textContent: text,
         });
       let objectUrls = [];
       function installer(item, result, binaryUrl) {
         const manifest = {
           name: `TRMNL ${result.target}`,
-          version: item.tag,
-          new_install_prompt_erase: true,
           new_install_improv_wait_time: 0,
+          new_install_prompt_erase: true,
+          version: item.tag,
           builds: [
             {
               chipFamily: result.flash.chipFamily,
-              parts: [{ path: binaryUrl, offset: 0 }],
+              parts: [{ offset: 0, path: binaryUrl }],
             },
           ],
         };

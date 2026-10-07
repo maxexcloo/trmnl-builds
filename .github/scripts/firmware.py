@@ -4,46 +4,68 @@ import argparse
 import hashlib
 import json
 import os
-from pathlib import Path
 import re
 import subprocess
+from pathlib import Path
 
 UPSTREAM = "usetrmnl/trmnl-firmware"
 
 
-def run(*args, **kwargs):
-    return subprocess.check_output(args, text=True, **kwargs).strip()
-
-
-def releases(repo):
-    pages = json.loads(run("gh", "api", "--paginate", "--slurp", f"repos/{repo}/releases?per_page=100"))
-    return [release for page in pages for release in page if not release["draft"]]
-
-
-def output(name, value):
-    with open(os.environ["GITHUB_OUTPUT"], "a") as stream:
-        stream.write(f"{name}={value}\n")
-
-
-def plan(tag):
-    upstream = [release for release in releases(UPSTREAM) if not release["prerelease"]]
-    upstream.sort(key=lambda release: release["published_at"])
-    published = {release["tag_name"] for release in releases(os.environ["GITHUB_REPOSITORY"])}
-    if tag:
-        matches = [release for release in upstream if release["tag_name"] == tag]
-        if not matches:
-            raise ValueError("Choose a published, stable upstream release tag")
-        selected = matches[0]
-    else:
-        known = [release for release in upstream if release["tag_name"] in published]
-        baseline = known[0]["published_at"] if known else upstream[-1]["published_at"]
-        pending = [release for release in upstream if release["published_at"] >= baseline
-                   and release["tag_name"] not in published]
-        selected = pending[0] if pending else None
-    tag = selected["tag_name"] if selected else ""
-    if tag and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", tag):
-        raise ValueError(f"Unsupported release tag: {tag!r}")
-    output("tag", tag)
+def catalogue():
+    repo = os.environ["GITHUB_REPOSITORY"]
+    entries = []
+    for release in releases(repo):
+        asset = next(
+            (asset for asset in release["assets"] if asset["name"] == "manifest.json"),
+            None,
+        )
+        if not asset:
+            continue
+        manifest = json.loads(
+            run("gh", "api", asset["url"], "-H", "Accept: application/octet-stream")
+        )
+        urls = {
+            asset["name"]: asset["browser_download_url"] for asset in release["assets"]
+        }
+        for result in manifest["targets"]:
+            for item in result["files"]:
+                item["url"] = urls[item["name"]]
+        manifest["url"] = release["html_url"]
+        entries.append(manifest)
+    entries.sort(key=lambda entry: entry["published_at"], reverse=True)
+    # Keep recent images under Pages' 1 GB limit; older images remain file-flashable.
+    remaining = 750 * 1024 * 1024
+    for entry in entries:
+        for result in entry["targets"]:
+            flash = result.get("flash")
+            if not flash or flash["size"] > remaining:
+                continue
+            directory = Path("site/firmware") / entry["tag"]
+            directory.mkdir(parents=True, exist_ok=True)
+            subprocess.run(
+                [
+                    "gh",
+                    "release",
+                    "download",
+                    entry["tag"],
+                    "--repo",
+                    repo,
+                    "--pattern",
+                    flash["file"],
+                    "--dir",
+                    str(directory),
+                ],
+                check=True,
+            )
+            binary = directory / flash["file"]
+            item = next(
+                item for item in result["files"] if item["name"] == flash["file"]
+            )
+            if hashlib.sha256(binary.read_bytes()).hexdigest() != item["sha256"]:
+                raise ValueError(f"Checksum mismatch: {binary}")
+            remaining -= binary.stat().st_size
+            flash["path"] = str(binary.relative_to("site"))
+    Path("site/catalogue.json").write_text(json.dumps(entries, indent=2) + "\n")
 
 
 def discover(path):
@@ -65,9 +87,59 @@ def discover(path):
         else:
             skipped.append(name)
     if not targets:
-        raise ValueError("No firmware targets found; inspect the upstream configuration")
+        raise ValueError(
+            "No firmware targets found; inspect the upstream configuration"
+        )
     print("Excluded test/base environments:", ", ".join(sorted(skipped)))
-    output("targets", json.dumps(sorted(targets, key=lambda name: (name != "TRMNL_X_PAPERS3", name)), separators=(",", ":")))
+    output(
+        "targets",
+        json.dumps(
+            sorted(targets, key=lambda name: (name != "TRMNL_X_PAPERS3", name)),
+            separators=(",", ":"),
+        ),
+    )
+
+
+def manifest(tag, sha, targets):
+    repo = os.environ["GITHUB_REPOSITORY"]
+    results = []
+    for target in json.loads(targets):
+        path = Path("results") / target / "result.json"
+        results.append(
+            json.loads(path.read_text())
+            if path.exists()
+            else {"target": target, "status": "failure", "files": []}
+        )
+    upstream = json.loads(run("gh", "api", f"repos/{UPSTREAM}/releases/tags/{tag}"))
+    manifest = {
+        "commit": sha,
+        "tag": tag,
+        "targets": results,
+        "published_at": upstream["published_at"],
+        "run": f"https://github.com/{repo}/actions/runs/{os.environ['GITHUB_RUN_ID']}",
+    }
+    Path("manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    failed = [result["target"] for result in results if result["status"] != "success"]
+    notes = (
+        f"Community builds of [{UPSTREAM} {tag}](https://github.com/{UPSTREAM}/tree/{sha}).\n\n"
+        f"Upstream commit: `{sha}`. [Build logs]({manifest['run']}).\n\n"
+        "Firmware is GPL-3.0; upstream source is attached. Application binaries are not full-flash images.\n\n"
+        + (
+            "Failed targets: " + ", ".join(failed)
+            if failed
+            else "All discovered targets built successfully."
+        )
+    )
+    Path("release-notes.md").write_text(notes + "\n")
+    if failed:
+        print(
+            f"::warning::{len(failed)} targets failed; see release manifest and build logs"
+        )
+
+
+def output(name, value):
+    with open(os.environ["GITHUB_OUTPUT"], "a") as stream:
+        stream.write(f"{name}={value}\n")
 
 
 def pack(target, outcome):
@@ -79,7 +151,10 @@ def pack(target, outcome):
         build = Path("upstream/.pio/build") / target
         if not (build / "firmware.bin").is_file():
             raise ValueError(f"Missing firmware.bin for {target}")
-        for filename, kind in [("firmware.bin", "application"), ("merged_firmware.bin", "full-flash")]:
+        for filename, kind in [
+            ("firmware.bin", "application"),
+            ("merged_firmware.bin", "full-flash"),
+        ]:
             source = build / filename
             if source.is_file():
                 name = f"{target}-{kind}.bin"
@@ -92,68 +167,59 @@ def pack(target, outcome):
                     from esptool.targets import CHIP_DEFS
 
                     chip_id = int.from_bytes(data[12:14], "little")
-                    chip = next((definition.CHIP_NAME for definition in CHIP_DEFS.values()
-                                 if getattr(definition, "IMAGE_CHIP_ID", None) == chip_id), None)
+                    chip = next(
+                        (
+                            definition.CHIP_NAME
+                            for definition in CHIP_DEFS.values()
+                            if getattr(definition, "IMAGE_CHIP_ID", None) == chip_id
+                        ),
+                        None,
+                    )
                     if chip:
                         flash = {"chipFamily": chip, "file": name, "size": len(data)}
-    (destination / "result.json").write_text(json.dumps({"target": target, "status": outcome, "files": files, "flash": flash}))
+    (destination / "result.json").write_text(
+        json.dumps(
+            {"target": target, "status": outcome, "files": files, "flash": flash}
+        )
+    )
 
 
-def manifest(tag, sha, targets):
-    repo = os.environ["GITHUB_REPOSITORY"]
-    results = []
-    for target in json.loads(targets):
-        path = Path("results") / target / "result.json"
-        results.append(json.loads(path.read_text()) if path.exists() else
-                       {"target": target, "status": "failure", "files": []})
-    upstream = json.loads(run("gh", "api", f"repos/{UPSTREAM}/releases/tags/{tag}"))
-    manifest = {"commit": sha, "tag": tag, "targets": results,
-                "published_at": upstream["published_at"],
-                "run": f"https://github.com/{repo}/actions/runs/{os.environ['GITHUB_RUN_ID']}"}
-    Path("manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
-    failed = [result["target"] for result in results if result["status"] != "success"]
-    notes = (f"Community builds of [{UPSTREAM} {tag}](https://github.com/{UPSTREAM}/tree/{sha}).\n\n"
-             f"Upstream commit: `{sha}`. [Build logs]({manifest['run']}).\n\n"
-             "Firmware is GPL-3.0; upstream source is attached. Application binaries are not full-flash images.\n\n"
-             + ("Failed targets: " + ", ".join(failed) if failed else "All discovered targets built successfully."))
-    Path("release-notes.md").write_text(notes + "\n")
-    if failed:
-        print(f"::warning::{len(failed)} targets failed; see release manifest and build logs")
+def plan(tag):
+    upstream = [release for release in releases(UPSTREAM) if not release["prerelease"]]
+    upstream.sort(key=lambda release: release["published_at"])
+    published = {
+        release["tag_name"] for release in releases(os.environ["GITHUB_REPOSITORY"])
+    }
+    if tag:
+        matches = [release for release in upstream if release["tag_name"] == tag]
+        if not matches:
+            raise ValueError("Choose a published, stable upstream release tag")
+        selected = matches[0]
+    else:
+        known = [release for release in upstream if release["tag_name"] in published]
+        baseline = known[0]["published_at"] if known else upstream[-1]["published_at"]
+        pending = [
+            release
+            for release in upstream
+            if release["published_at"] >= baseline
+            and release["tag_name"] not in published
+        ]
+        selected = pending[0] if pending else None
+    tag = selected["tag_name"] if selected else ""
+    if tag and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", tag):
+        raise ValueError(f"Unsupported release tag: {tag!r}")
+    output("tag", tag)
 
 
-def catalogue():
-    repo = os.environ["GITHUB_REPOSITORY"]
-    entries = []
-    for release in releases(repo):
-        asset = next((asset for asset in release["assets"] if asset["name"] == "manifest.json"), None)
-        if not asset:
-            continue
-        manifest = json.loads(run("gh", "api", asset["url"], "-H", "Accept: application/octet-stream"))
-        urls = {asset["name"]: asset["browser_download_url"] for asset in release["assets"]}
-        for result in manifest["targets"]:
-            for item in result["files"]:
-                item["url"] = urls[item["name"]]
-        manifest["url"] = release["html_url"]
-        entries.append(manifest)
-    entries.sort(key=lambda entry: entry["published_at"], reverse=True)
-    # Keep recent images under Pages' 1 GB limit; older images remain file-flashable.
-    remaining = 750 * 1024 * 1024
-    for entry in entries:
-        for result in entry["targets"]:
-            flash = result.get("flash")
-            if not flash or flash["size"] > remaining:
-                continue
-            directory = Path("site/firmware") / entry["tag"]
-            directory.mkdir(parents=True, exist_ok=True)
-            subprocess.run(["gh", "release", "download", entry["tag"], "--repo", repo,
-                            "--pattern", flash["file"], "--dir", str(directory)], check=True)
-            binary = directory / flash["file"]
-            item = next(item for item in result["files"] if item["name"] == flash["file"])
-            if hashlib.sha256(binary.read_bytes()).hexdigest() != item["sha256"]:
-                raise ValueError(f"Checksum mismatch: {binary}")
-            remaining -= binary.stat().st_size
-            flash["path"] = str(binary.relative_to("site"))
-    Path("site/catalogue.json").write_text(json.dumps(entries, indent=2) + "\n")
+def releases(repo):
+    pages = json.loads(
+        run("gh", "api", "--paginate", "--slurp", f"repos/{repo}/releases?per_page=100")
+    )
+    return [release for page in pages for release in page if not release["draft"]]
+
+
+def run(*args, **kwargs):
+    return subprocess.check_output(args, text=True, **kwargs).strip()
 
 
 if __name__ == "__main__":

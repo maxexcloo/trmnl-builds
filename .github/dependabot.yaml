@@ -4,17 +4,17 @@ updates:
     package-ecosystem: github-actions
     groups:
       actions:
-        patterns: ['*']
+        patterns: ["*"]
     schedule:
       interval: monthly
   - directory: /
     package-ecosystem: uv
     groups:
       build-tools:
-        patterns: ['*']
+        patterns: ["*"]
     # Confirmed Paper S3 build failure: pioarduino/platform-espressif32#529.
     ignore:
       - dependency-name: platformio
-        versions: ['6.2.0']
+        versions: ["6.2.0"]
     schedule:
       interval: monthly
