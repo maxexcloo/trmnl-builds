@@ -46,6 +46,25 @@ class FirmwareTests(unittest.TestCase):
                 json.loads(output.call_args.args[1]), ["hardware", "model"]
             )
 
+    def test_discovery_supports_legacy_board_selection(self):
+        config = [
+            ["env:local", [["board", "esp32-c3-devkitc-02"]]],
+            ["env:esp32-c3-devkitc-02", [["board", "esp32-c3-devkitc-02"]]],
+            ["env:native", [["platform", "native"]]],
+            ["env:test", [["board", "esp32"], ["test_build_src", True]]],
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.json"
+            path.write_text(json.dumps(config))
+            with (
+                patch.object(firmware, "output") as output,
+                contextlib.redirect_stdout(io.StringIO()),
+            ):
+                firmware.discover(path)
+            self.assertEqual(
+                json.loads(output.call_args.args[1]), ["esp32-c3-devkitc-02", "local"]
+            )
+
     def test_polling_bootstraps_latest_then_catches_every_missing_release(self):
         upstream = [
             {"tag_name": f"v{i}", "published_at": f"2026-10-0{i}", "prerelease": False}
