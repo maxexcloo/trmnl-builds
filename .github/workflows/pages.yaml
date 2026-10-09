@@ -1,11 +1,10 @@
 name: Pages
 on:
-  push:
-    branches: [main]
-    paths:
-      [".github/scripts/firmware.py", ".github/workflows/pages.yaml", "site/**"]
   workflow_call:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/scripts/firmware.py", ".github/workflows/pages.yaml", "site/**"]
 permissions:
   contents: read
   id-token: write

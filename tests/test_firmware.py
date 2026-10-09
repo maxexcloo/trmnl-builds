@@ -165,7 +165,7 @@ class FirmwareTests(unittest.TestCase):
 
     def test_polling_builds_only_the_latest_missing_release(self):
         upstream = [
-            {"tag_name": f"v{i}", "published_at": f"2026-10-0{i}", "prerelease": False}
+            {"prerelease": False, "published_at": f"2026-10-0{i}", "tag_name": f"v{i}"}
             for i in range(1, 5)
         ]
         for owned, expected in [

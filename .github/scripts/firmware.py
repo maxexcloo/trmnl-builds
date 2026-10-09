@@ -51,12 +51,12 @@ def catalogue():
                     "release",
                     "download",
                     entry["tag"],
-                    "--repo",
-                    repo,
-                    "--pattern",
-                    flash["file"],
                     "--dir",
                     str(directory),
+                    "--pattern",
+                    flash["file"],
+                    "--repo",
+                    repo,
                 ],
                 check=True,
             )
@@ -116,15 +116,15 @@ def manifest(tag, sha, targets):
         results.append(
             json.loads(path.read_text())
             if path.exists()
-            else {"target": target, "status": "failure", "files": []}
+            else {"status": "failure", "target": target, "files": []}
         )
     upstream = json.loads(run("gh", "api", f"repos/{UPSTREAM}/releases/tags/{tag}"))
     manifest = {
         "commit": sha,
-        "tag": tag,
-        "targets": results,
         "published_at": upstream["published_at"],
         "run": f"https://github.com/{repo}/actions/runs/{os.environ['GITHUB_RUN_ID']}",
+        "tag": tag,
+        "targets": results,
     }
     Path("manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     failed = [result["target"] for result in results if result["status"] != "success"]
@@ -238,7 +238,7 @@ def prepare(path, target):
         command = ["git", "-C", str(path.resolve()), "apply"]
         patch_path = str(patch_file.resolve())
         reverse = subprocess.run(
-            [*command, "--reverse", "--check", patch_path], capture_output=True
+            [*command, "--check", "--reverse", patch_path], capture_output=True
         )
         if reverse.returncode == 0:
             print(f"Already applied: {patch_file.name}")
