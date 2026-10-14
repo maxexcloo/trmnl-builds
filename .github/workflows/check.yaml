@@ -23,16 +23,5 @@ jobs:
           sed -n '/^\[tools\]$/p; s/^# \([^ ]* = "latest"\)$/\1/p' .mise.toml > "$HOME/.config/mise/config.toml"
       - name: Set Up Tools
         uses: jdx/mise-action@v5
-      - name: Test Release Planning & Packaging
+      - name: Run Checks
         run: mise run check
-      - name: Check Browser JavaScript
-        run: |
-          python3 - <<'PYCODE' > /tmp/site.mjs
-          import pathlib, re
-          html = pathlib.Path('site/index.html').read_text()
-          print(re.search(r'<script type="module">(.*?)</script>', html, re.S)[1])
-          PYCODE
-          node --check /tmp/site.mjs
-      - name: Validate Workflows
-        # Native concurrency queues are supported by GitHub but not actionlint 1.7.12.
-        run: actionlint -ignore unexpected.key..queue..for..concurrency..section

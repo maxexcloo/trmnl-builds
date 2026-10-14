@@ -30,9 +30,15 @@ build does not guarantee hardware compatibility.
 
 ## Development
 
-Everything runs on GitHub. The site uses ESP Web Tools without a frontend build;
-uv manages build dependencies. See [AGENTS.md](AGENTS.md) for project conventions
-and checks.
+Firmware builds run on GitHub. The site uses ESP Web Tools without a frontend
+build; uv manages build dependencies. Run the same configuration, JavaScript and
+firmware planning checks locally as CI:
+
+```sh
+mise run check
+```
+
+See [AGENTS.md](AGENTS.md) for project conventions.
 
 ## Licence
 

@@ -1,5 +1,6 @@
 [tools]
 # gh = "latest"
+# node = "latest"
 # updatecli = "latest"
 # uv = "latest"
 actionlint = "1.7.12"
@@ -29,8 +30,11 @@ updatecli pipeline apply --config .updatecli.d --disable-changelog --disable-uda
 
 # Development
 [tasks.check]
-description = "Validate Local Update Policies"
-run = """
+description = "Validate Configuration, Site JavaScript & Firmware Tests"
+run = '''
 updatecli manifest validate --config .updatecli.d --disable-templating --strict
+# Native concurrency queues are supported by GitHub but not actionlint 1.7.12.
+actionlint -ignore unexpected.key..queue..for..concurrency..section
+uv run --locked python -c 'import pathlib, re, subprocess; script = re.search(r"<script type=\"module\">(.*?)</script>", pathlib.Path("site/index.html").read_text(), re.S)[1]; subprocess.run(["node", "--check", "--input-type=module"], check=True, input=script, text=True)'
 uv run --locked python -m unittest discover -s tests
-"""
+'''
