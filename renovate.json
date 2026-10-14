@@ -11,6 +11,38 @@
       "matchStrings": [
         "https://unpkg\\.com/(?<depName>esp-web-tools)@(?<currentValue>[^/\\s\"]+)"
       ]
+    },
+    {
+      "currentValueTemplate": "main",
+      "customType": "regex",
+      "datasourceTemplate": "git-refs",
+      "depNameTemplate": "bitbank2/FastEPD",
+      "description": "Update FastEPD in patched firmware variants",
+      "managerFilePatterns": ["/^patches/.+\\.patch$/"],
+      "matchStrings": [
+        "\\n\\+[^\\n]*https://github\\.com/bitbank2/FastEPD\\.git#(?<currentDigest>[a-f0-9]{40})"
+      ],
+      "packageNameTemplate": "https://github.com/bitbank2/FastEPD"
+    },
+    {
+      "customType": "regex",
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "pioarduino/platform-espressif32",
+      "description": "Update PlatformIO platforms in patched firmware variants",
+      "managerFilePatterns": ["/^patches/.+\\.patch$/"],
+      "matchStrings": [
+        "\\n\\+platform = https://github\\.com/pioarduino/platform-espressif32/releases/download/(?<currentValue>[^/\\s]+)/platform-espressif32\\.zip"
+      ],
+      "versioningTemplate": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(?:-(?<revision>\\d+))?$"
+    },
+    {
+      "customType": "regex",
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "astral-sh/uv",
+      "description": "Update the shared uv version for local checks & CI",
+      "extractVersionTemplate": "^v?(?<version>.*)$",
+      "managerFilePatterns": ["/^pyproject\\.toml$/"],
+      "matchStrings": ["required-version = \"==(?<currentValue>[0-9.]+)\""]
     }
   ],
   "packageRules": [
@@ -28,6 +60,11 @@
       "description": "Group Patch & Pin Updates",
       "groupName": "Patch Dependencies",
       "matchUpdateTypes": ["patch", "pin", "digest"]
+    },
+    {
+      "description": "Keep patched PlatformIO platform versions together",
+      "groupName": "patched PlatformIO platforms",
+      "matchPackageNames": ["pioarduino/platform-espressif32"]
     }
   ]
 }
