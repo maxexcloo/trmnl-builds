@@ -9,7 +9,6 @@ updatecli manifest validate --config .updatecli.d --disable-templating --strict
 uv run --locked python -m unittest discover -s tests
 """
 
-# Dependency Updates
 [tasks."dependencies:check"]
 description = "Preview Local Dependency Updates"
 run = """

@@ -9,6 +9,7 @@ autodiscovery:
         github.com:
           token: '{{ env "GITHUB_TOKEN" }}'
           kind: github
+      # The crawler cannot match Docker action references independently of their tag.
       only:
         - actions:
             actions/checkout: ""

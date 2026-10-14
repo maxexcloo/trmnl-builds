@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://www.updatecli.io/schema/latest/policy/manifest/config.json
-name: Update Shared uv Version
-pipelineid: update-shared-uv-version
+name: Update Required uv Version
+pipelineid: update-required-uv-version
 labels:
   group: tools
 sources:
@@ -22,11 +22,4 @@ targets:
     spec:
       file: pyproject.toml
       matchpattern: (required-version = "==)[0-9.]+(")
-      replacepattern: ${1}{{ source "version" }}${2}
-  tool:
-    kind: file
-    sourceid: version
-    spec:
-      file: .mise.toml
-      matchpattern: (?m)^(uv = ")[^"]+("$)
       replacepattern: ${1}{{ source "version" }}${2}
