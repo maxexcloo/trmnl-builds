@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://www.updatecli.io/schema/latest/policy/manifest/config.json
+name: Update Actionlint Container
+pipelineid: update-actionlint-container
+labels:
+  group: actions
+sources:
+  version:
+    kind: dockerimage
+    spec:
+      image: rhysd/actionlint
+      versionfilter:
+        kind: semver
+        pattern: "*"
+targets:
+  action:
+    kind: file
+    sourceid: version
+    spec:
+      file: .github/workflows/check.yaml
+      matchpattern: (docker://rhysd/actionlint:)[0-9.]+
+      replacepattern: ${1}{{ source "version" }}
+---
+name: Update Major Action Aliases
+pipelineid: update-major-action-aliases
+autodiscovery:
+  crawlers:
+    github/action:
+      digest: false
+      rootdir: .github
+      credentials:
+        github.com:
+          kind: github
+          token: '{{ env "GITHUB_TOKEN" }}'
+      only:
+        - actions:
+            actions/checkout: ""
+            actions/configure-pages: ""
+            actions/deploy-pages: ""
+            actions/download-artifact: ""
+            actions/upload-artifact: ""
+            actions/upload-pages-artifact: ""
+            softprops/action-gh-release: ""
+      versionfilter:
+        kind: regex/semver
+        pattern: "*"
+        regex: ^v?([0-9]+)$
+labels:
+  group: actions
+---
+name: Update Versioned Actions
+pipelineid: update-versioned-actions
+autodiscovery:
+  crawlers:
+    github/action:
+      digest: false
+      rootdir: .github
+      credentials:
+        github.com:
+          kind: github
+          token: '{{ env "GITHUB_TOKEN" }}'
+      only:
+        - actions:
+            astral-sh/setup-uv: ""
+      versionfilter:
+        kind: semver
+        pattern: "*"
+labels:
+  group: actions

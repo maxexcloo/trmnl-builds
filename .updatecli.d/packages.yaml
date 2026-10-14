@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://www.updatecli.io/schema/latest/policy/manifest/config.json
+name: Update ESP Web Tools
+pipelineid: update-esp-web-tools
+labels:
+  group: packages
+sources:
+  version:
+    kind: npm
+    spec:
+      name: esp-web-tools
+targets:
+  pin:
+    kind: file
+    sourceid: version
+    spec:
+      file: site/index.html
+      matchpattern: (https://unpkg.com/esp-web-tools@)[^/\s"]+
+      replacepattern: ${1}{{ source "version" }}
+---
+name: Update esptool In pyproject.toml
+pipelineid: update-esptool-in-pyproject-toml
+labels:
+  group: packages
+sources:
+  version:
+    kind: pypi
+    spec:
+      name: esptool
+      versionfilter:
+        kind: pep440
+        pattern: "*"
+targets:
+  pin:
+    kind: file
+    sourceid: version
+    spec:
+      file: pyproject.toml
+      matchpattern: (esptool==)[0-9.]+
+      replacepattern: ${1}{{ source "version" }}
+---
+name: Update pip In pyproject.toml
+pipelineid: update-pip-in-pyproject-toml
+labels:
+  group: packages
+sources:
+  version:
+    kind: pypi
+    spec:
+      name: pip
+      versionfilter:
+        kind: pep440
+        pattern: "*"
+targets:
+  pin:
+    kind: file
+    sourceid: version
+    spec:
+      file: pyproject.toml
+      matchpattern: (pip==)[0-9.]+
+      replacepattern: ${1}{{ source "version" }}
+---
+name: Update platformio In pyproject.toml
+pipelineid: update-platformio-in-pyproject-toml
+labels:
+  group: packages
+sources:
+  version:
+    kind: pypi
+    spec:
+      name: platformio
+      versionfilter:
+        kind: pep440
+        pattern: "!=6.2.0"
+targets:
+  pin:
+    kind: file
+    sourceid: version
+    spec:
+      file: pyproject.toml
+      matchpattern: (platformio==)[0-9.]+
+      replacepattern: ${1}{{ source "version" }}
