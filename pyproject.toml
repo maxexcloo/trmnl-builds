@@ -12,4 +12,4 @@ dependencies = [
 
 [tool.uv]
 package = false
-required-version = "==0.13.0"
+required-version = "==0.13.1"

@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=https://www.updatecli.io/schema/latest/policy/manifest/config.json
+name: Update FastEPD Revision
+pipelineid: update-fastepd-revision
+labels:
+  group: sources
+sources:
+  version:
+    kind: shell
+    spec:
+      command: |-
+        set -eu
+        revision=$(git ls-remote --exit-code https://github.com/bitbank2/FastEPD.git refs/heads/main | awk 'NR == 1 { print $1 }')
+        test -n "$revision"
+        printf '%s\n' "$revision"
+targets:
+  patches:
+    kind: file
+    sourceid: version
+    spec:
+      matchpattern: (\n\+[^\n]*https://github.com/bitbank2/FastEPD.git#)[a-f0-9]{40}
+      replacepattern: ${1}{{ source "version" }}
+      files:
+        - patches/TRMNL_X_EPDIY/0001-build-configuration.patch

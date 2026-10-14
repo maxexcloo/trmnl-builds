@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://www.updatecli.io/schema/latest/policy/manifest/config.json
+name: Update Patched PlatformIO Platforms
+pipelineid: update-patched-platformio-platforms
+labels:
+  group: platform
+sources:
+  version:
+    kind: githubrelease
+    spec:
+      owner: pioarduino
+      repository: platform-espressif32
+      token: '{{ env "GITHUB_TOKEN" }}'
+      versionfilter:
+        kind: regex/semver
+        pattern: "*"
+        regex: ^([0-9]+\.[0-9]+\.[0-9]+)(?:-[0-9]+)?$
+targets:
+  patches:
+    kind: file
+    sourceid: version
+    spec:
+      matchpattern: (\n\+platform = https://github.com/pioarduino/platform-espressif32/releases/download/)[^/\s]+/platform-espressif32.zip
+      replacepattern: ${1}{{ source "version" }}/platform-espressif32.zip
+      files:
+        - patches/TRMNL_X_EPDIY/0001-build-configuration.patch
+        - patches/esp32-c5-devkitc-1/0001-build-configuration.patch

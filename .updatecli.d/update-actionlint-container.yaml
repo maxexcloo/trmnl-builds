@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=https://www.updatecli.io/schema/latest/policy/manifest/config.json
+name: Update Actionlint Container
+pipelineid: update-actionlint-container
+labels:
+  group: actions
+sources:
+  version:
+    kind: dockerimage
+    spec:
+      image: rhysd/actionlint
+      versionfilter:
+        kind: semver
+        pattern: "*"
+targets:
+  action:
+    kind: file
+    sourceid: version
+    spec:
+      file: .github/workflows/check.yaml
+      matchpattern: "(docker://rhysd/actionlint:)[0-9.]+"
+      replacepattern: '${1}{{ source "version" }}'

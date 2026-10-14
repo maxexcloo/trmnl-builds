@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=https://www.updatecli.io/schema/latest/policy/manifest/config.json
+name: Update esptool In pyproject.toml
+pipelineid: update-esptool-in-pyproject-toml
+labels:
+  group: packages
+sources:
+  version:
+    kind: pypi
+    spec:
+      name: esptool
+      versionfilter:
+        kind: pep440
+        pattern: "*"
+targets:
+  pin:
+    kind: file
+    sourceid: version
+    spec:
+      file: pyproject.toml
+      matchpattern: (esptool==)[0-9.]+
+      replacepattern: ${1}{{ source "version" }}

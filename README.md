@@ -38,3 +38,19 @@ and checks.
 
 The automation and website are [AGPL-3.0](LICENSE).
 Firmware and its dependencies retain their upstream licences.
+
+## Dependency Updates
+
+Mise installs the pinned Updatecli CLI. Run `mise run dependencies:check` locally
+to preview updates from `.updatecli.d/`. GitHub authentication uses the existing
+`gh` login; credentials stay in the command process.
+
+Review compatibility and major upgrades separately, then apply a selected group:
+
+```sh
+mise run dependencies:update --labels group:tools
+```
+
+Use the groups declared in the policy, review the Git diff and run the project
+checks before committing or deploying. Updatecli changes local files; it does
+not create issues, pull requests, commits or deployments. Hosted Renovate is disabled.
