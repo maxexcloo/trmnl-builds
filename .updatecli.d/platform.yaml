@@ -21,6 +21,5 @@ targets:
     spec:
       matchpattern: (\n\+platform = https://github.com/pioarduino/platform-espressif32/releases/download/)[^/\s]+/platform-espressif32.zip
       replacepattern: ${1}{{ source "version" }}/platform-espressif32.zip
-      files:
-        - patches/TRMNL_X_EPDIY/0001-build-configuration.patch
-        - patches/esp32-c5-devkitc-1/0001-build-configuration.patch
+      file: patches/*/*.patch
+      searchpattern: true

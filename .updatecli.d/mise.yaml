@@ -17,28 +17,3 @@ targets:
           mise upgrade --bump --local --no-prune || exit "$?"
         fi
         printf '%s\n' "$updates"
----
-name: Update Required uv Version
-pipelineid: update-required-uv-version
-labels:
-  group: tools
-sources:
-  version:
-    kind: githubrelease
-    spec:
-      owner: astral-sh
-      repository: uv
-      token: '{{ env "GITHUB_TOKEN" }}'
-      versionfilter:
-        kind: semver
-        pattern: "*"
-    transformers:
-      - trimprefix: v
-targets:
-  pin:
-    kind: file
-    sourceid: version
-    spec:
-      file: pyproject.toml
-      matchpattern: (required-version = "==)[0-9.]+(")
-      replacepattern: ${1}{{ source "version" }}${2}

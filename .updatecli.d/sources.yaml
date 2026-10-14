@@ -19,5 +19,5 @@ targets:
     spec:
       matchpattern: (\n\+[^\n]*https://github.com/bitbank2/FastEPD.git#)[a-f0-9]{40}
       replacepattern: ${1}{{ source "version" }}
-      files:
-        - patches/TRMNL_X_EPDIY/0001-build-configuration.patch
+      file: patches/*/*.patch
+      searchpattern: true

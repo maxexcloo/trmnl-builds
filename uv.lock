@@ -541,9 +541,9 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "esptool", specifier = "==5.5.0" },
-    { name = "pip", specifier = "==26.2.1" },
-    { name = "platformio", specifier = "==6.1.19" },
+    { name = "esptool" },
+    { name = "pip" },
+    { name = "platformio", specifier = "!=6.2.0" },
 ]
 
 [[package]]
