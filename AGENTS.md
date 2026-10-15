@@ -26,4 +26,4 @@
 
 - Use uv with the committed lockfile.
 - Run `uv run --locked python -m unittest discover -s tests`.
-- Run actionlint after workflow changes. GitHub Actions also checks JavaScript syntax.
+- Run actionlint after workflow changes and check site JavaScript syntax locally.
