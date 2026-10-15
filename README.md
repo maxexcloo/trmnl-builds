@@ -31,7 +31,8 @@ build does not guarantee hardware compatibility.
 ## Development
 
 Firmware builds run on GitHub. The site uses ESP Web Tools without a frontend
-build; uv manages build dependencies. Run configuration, JavaScript and firmware planning checks locally:
+build; uv manages build dependencies. Run the same configuration, JavaScript and
+firmware planning checks locally as CI:
 
 ```sh
 mise run check
