@@ -22,6 +22,6 @@ jobs:
       - name: Set Up Shared Tools & Tasks
         uses: maxexcloo/dotfiles/.github/actions/mise@main
         with:
-          tools: actionlint node python updatecli uv
+          tools: actionlint node prettier python ruff updatecli uv
       - name: Run Checks
         run: mise run check

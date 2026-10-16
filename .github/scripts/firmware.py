@@ -238,13 +238,18 @@ def prepare(path, target):
         command = ["git", "-C", str(path.resolve()), "apply"]
         patch_path = str(patch_file.resolve())
         reverse = subprocess.run(
-            [*command, "--check", "--reverse", patch_path], capture_output=True
+            [*command, "--check", "--reverse", patch_path],
+            check=False,
+            capture_output=True,
         )
         if reverse.returncode == 0:
             print(f"Already applied: {patch_file.name}")
             continue
         check = subprocess.run(
-            [*command, "--check", patch_path], capture_output=True, text=True
+            [*command, "--check", patch_path],
+            check=False,
+            capture_output=True,
+            text=True,
         )
         if check.returncode:
             raise ValueError(

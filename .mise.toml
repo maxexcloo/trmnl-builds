@@ -5,5 +5,8 @@ python_test_runner = "uv run --locked python -B"
 
 # Development
 [tasks.check]
-depends = ["check:actions", "check:updates", "test:python"]
+depends = ["check:actions", "check:prettier", "check:python", "check:updates", "test:python"]
 run = "uv run --locked python -c 'import pathlib, re, subprocess; script = re.search(r\"<script type=\\\"module\\\">(.*?)</script>\", pathlib.Path(\"site/index.html\").read_text(), re.S)[1]; subprocess.run([\"node\", \"--check\", \"--input-type=module\"], check=True, input=script, text=True)'"
+
+[tasks.fmt]
+depends = ["fmt:prettier", "fmt:python"]
