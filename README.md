@@ -30,6 +30,9 @@ build does not guarantee hardware compatibility.
 
 ## Development
 
+Install the [shared Mise configuration](https://github.com/maxexcloo/dotfiles#shared-tools--tasks)
+before running local Mise tasks.
+
 Firmware builds run on GitHub. The site uses ESP Web Tools without a frontend
 build; uv manages build dependencies. Run the same configuration, JavaScript and
 firmware planning checks locally as CI:

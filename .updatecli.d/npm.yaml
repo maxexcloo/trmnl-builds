@@ -2,7 +2,7 @@
 name: Update ESP Web Tools
 pipelineid: update-esp-web-tools
 labels:
-  group: packages
+  group: npm
 sources:
   version:
     kind: npm
@@ -16,11 +16,3 @@ targets:
       file: site/index.html
       matchpattern: (https://unpkg.com/esp-web-tools@)[^/\s"]+
       replacepattern: ${1}{{ source "version" }}
----
-name: Update Python Packages
-pipelineid: update-python-packages
-labels:
-  group: packages
-autodiscovery:
-  crawlers:
-    pyproject:

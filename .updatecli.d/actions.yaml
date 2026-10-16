@@ -1,16 +1,13 @@
 # yaml-language-server: $schema=https://www.updatecli.io/schema/latest/policy/manifest/config.json
-name: Update Major Action Aliases
-pipelineid: update-major-action-aliases
+name: Update Actions
+pipelineid: update-actions
 labels:
   group: actions
 autodiscovery:
   crawlers:
     github/action:
       digest: false
-      credentials:
-        github.com:
-          kind: github
-          token: '{{ env "GITHUB_TOKEN" }}'
+      rootdir: .github
       ignore:
         - actions:
             astral-sh/setup-uv: ""
@@ -27,10 +24,7 @@ autodiscovery:
   crawlers:
     github/action:
       digest: false
-      credentials:
-        github.com:
-          kind: github
-          token: '{{ env "GITHUB_TOKEN" }}'
+      rootdir: .github
       only:
         - actions:
             astral-sh/setup-uv: ""
