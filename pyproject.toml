@@ -3,11 +3,11 @@ name = "trmnl-builds"
 requires-python = ">=3.13,<3.14"
 version = "0.0.0"
 dependencies = [
-    "esptool",
-    # Upstream tool installers invoke python -m pip.
-    "pip",
-    # 6.2.0 breaks upstream ESP-IDF builds: pioarduino/platform-espressif32#529.
-    "platformio!=6.2.0",
+  "esptool",
+  # Upstream tool installers invoke python -m pip.
+  "pip",
+  # 6.2.0 breaks upstream ESP-IDF builds: pioarduino/platform-espressif32#529.
+  "platformio!=6.2.0",
 ]
 
 [tool.uv]

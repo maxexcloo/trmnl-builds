@@ -19,11 +19,11 @@
 - Prefer native GitHub Actions and maintained off-the-shelf actions over scripts
   where they cover the task. Keep custom code limited to project-specific behaviour;
   add dependencies only for a concrete need.
-- Format HTML, CSS and JavaScript with Prettier defaults. Keep user-facing wording
+- Format HTML, CSS and JavaScript with Oxfmt defaults. Keep user-facing wording
   plain and direct; omit promotional phrases.
 
 ## Verification
 
 - Use uv with the committed lockfile.
-- Run `uv run --locked python -m unittest discover -s tests`.
-- Run actionlint after workflow changes. GitHub Actions also checks JavaScript syntax.
+- Run `mise run check` for formatting, Python, workflow, Updatecli policy and
+  JavaScript syntax checks, including the firmware tests.

@@ -7,7 +7,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 spec = importlib.util.spec_from_file_location(
     "firmware", Path(__file__).parents[1] / ".github/scripts/firmware.py"
@@ -17,6 +17,48 @@ spec.loader.exec_module(firmware)
 
 
 class FirmwareTests(unittest.TestCase):
+    def test_prune_removes_only_obsolete_build_assets(self):
+        names = [
+            "hardware-application.bin",
+            "hardware-full-flash.bin",
+            "failed-application.bin",
+            "removed-patched-source.tar.gz",
+            "current-patched-source.tar.gz",
+            "manifest.json",
+            "upstream-source.tar.gz",
+            "notes.txt",
+            "custom.bin",
+        ]
+        assets = [{"id": index, "name": name} for index, name in enumerate(names)]
+        with tempfile.TemporaryDirectory() as directory, contextlib.chdir(directory):
+            current = Path("results/hardware")
+            current.mkdir(parents=True)
+            (current / "hardware-application.bin").touch()
+            source = Path("results/current-patched")
+            source.mkdir()
+            (source / "current-patched-source.tar.gz").touch()
+            with (
+                patch.dict(os.environ, GITHUB_REPOSITORY="owner/builds"),
+                patch.object(
+                    firmware, "run", return_value=json.dumps({"assets": assets})
+                ) as run,
+            ):
+                firmware.prune("v1")
+            self.assertEqual(
+                run.call_args_list,
+                [call("gh", "api", "repos/owner/builds/releases/tags/v1")]
+                + [
+                    call(
+                        "gh",
+                        "api",
+                        "--method",
+                        "DELETE",
+                        f"repos/owner/builds/releases/assets/{index}",
+                    )
+                    for index in (1, 2, 3)
+                ],
+            )
+
     def test_discovery_excludes_tests_and_bases_but_keeps_devices(self):
         config = [
             ["env:base", [["board", "esp32"]]],

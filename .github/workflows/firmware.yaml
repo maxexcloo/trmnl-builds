@@ -180,6 +180,11 @@ jobs:
             results/*/*.bin
             results/*/*-source.tar.gz
             manifest.json
+      - name: Remove Obsolete Release Assets
+        run: python .github/scripts/firmware.py prune "$TAG"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.discover.outputs.tag }}
   pages:
     name: Pages
     if: always() && !cancelled() && needs.publish.result == 'success'

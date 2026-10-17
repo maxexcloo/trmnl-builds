@@ -140,29 +140,22 @@
         Download and install
         <a href="https://github.com/usetrmnl/trmnl-firmware">TRMNL firmware</a>.
       </p>
-      <p>
-        Choose a release and your device to download firmware or install it over
-        USB.
-      </p>
+      <p>Choose a release and your device to download firmware or install it over USB.</p>
       <details>
         <summary>Before You Flash</summary>
         <p>
-          Use a USB data cable and a browser with Web Serial support, such as
-          desktop Chrome or Edge. Check your device model: chip detection cannot
-          identify the board. Full-flash installation overwrites saved device
-          settings, even if you skip erasing the device.
+          Use a USB data cable and a browser with Web Serial support, such as desktop Chrome or
+          Edge. Check your device model: chip detection cannot identify the board. Full-flash
+          installation overwrites saved device settings, even if you skip erasing the device.
         </p>
         <p>
-          Full-flash images include the bootloader and partition table.
-          Application binaries require an existing compatible installation. For
-          older releases, download the full-flash image and select it when
-          prompted.
+          Full-flash images include the bootloader and partition table. Application binaries require
+          an existing compatible installation. For older releases, download the full-flash image and
+          select it when prompted.
         </p>
       </details>
       <div class="controls">
-        <label for="release"
-          >Release<select id="release" disabled></select
-        ></label>
+        <label for="release">Release<select id="release" disabled></select></label>
         <label for="target">Target<select id="target" disabled></select></label>
       </div>
       <p id="status" role="status">Loading releases…</p>
@@ -182,8 +175,8 @@
       </div>
     </main>
     <footer>
-      Unofficial builds, not verified on hardware. Releases include source code,
-      build results and SHA-256 checksums. Firmware is licensed under GPL-3.0.
+      Unofficial builds, not verified on hardware. Releases include source code, build results and
+      SHA-256 checksums. Firmware is licensed under GPL-3.0.
     </footer>
     <script type="module">
       const body = document.querySelector("tbody");
@@ -205,7 +198,12 @@
         });
       const targetName = (result) =>
         result.patched ? `${result.environment} (Patched)` : result.target;
-      let objectUrls = [];
+      const objectUrls = new Set();
+      function revokeUrl(url) {
+        if (!url) return;
+        URL.revokeObjectURL(url);
+        objectUrls.delete(url);
+      }
       function installer(item, result, binaryUrl) {
         const manifest = {
           name: `TRMNL ${targetName(result)}`,
@@ -222,7 +220,7 @@
         const url = URL.createObjectURL(
           new Blob([JSON.stringify(manifest)], { type: "application/json" }),
         );
-        objectUrls.push(url);
+        objectUrls.add(url);
         const button = document.createElement("esp-web-install-button");
         button.setAttribute("manifest", url);
         return button;
@@ -230,24 +228,15 @@
       function flashing(cell, item, result) {
         if (!result.flash) {
           cell.textContent =
-            result.status === "success"
-              ? "No supported full-flash image"
-              : "Build unavailable";
+            result.status === "success" ? "No supported full-flash image" : "Build unavailable";
           return;
         }
         if (result.flash.path) {
-          cell.append(
-            installer(
-              item,
-              result,
-              new URL(result.flash.path, location.href).href,
-            ),
-          );
+          cell.append(installer(item, result, new URL(result.flash.path, location.href).href));
           return;
         }
         const label = document.createElement("label");
-        label.textContent =
-          "Download the full-flash image, then select it here:";
+        label.textContent = "Download the full-flash image, then select it here:";
         const input = document.createElement("input");
         input.type = "file";
         input.accept = ".bin";
@@ -255,48 +244,44 @@
         const message = document.createElement("span");
         message.setAttribute("role", "status");
         cell.append(label, message);
+        let binaryUrl;
         input.addEventListener("change", async () => {
-          cell.querySelector("esp-web-install-button")?.remove();
+          const previous = cell.querySelector("esp-web-install-button");
+          revokeUrl(previous?.getAttribute("manifest"));
+          previous?.remove();
+          revokeUrl(binaryUrl);
+          message.textContent = "";
           const file = input.files[0];
           if (!file) return;
           try {
             message.textContent = "Checking image…";
             if (file.size !== result.flash.size)
-              throw new Error(
-                "Image size does not match this target and release.",
-              );
+              throw new Error("Image size does not match this target and release.");
             const data = await file.arrayBuffer();
-            const hash = [
-              ...new Uint8Array(await crypto.subtle.digest("SHA-256", data)),
-            ]
+            const hash = [...new Uint8Array(await crypto.subtle.digest("SHA-256", data))]
               .map((byte) => byte.toString(16).padStart(2, "0"))
               .join("");
-            const expected = result.files.find(
-              (file) => file.name === result.flash.file,
-            ).sha256;
-            if (hash !== expected)
-              throw new Error("Image does not match this target and release.");
-            const url = URL.createObjectURL(new Blob([data]));
-            objectUrls.push(url);
+            const expected = result.files.find((file) => file.name === result.flash.file).sha256;
+            if (hash !== expected) throw new Error("Image does not match this target and release.");
+            if (input.files[0] !== file || !cell.isConnected) return;
+            binaryUrl = URL.createObjectURL(new Blob([data]));
+            objectUrls.add(binaryUrl);
             message.textContent = "Image verified. Ready to flash.";
-            cell.append(installer(item, result, url));
+            cell.append(installer(item, result, binaryUrl));
           } catch (error) {
-            message.textContent = error.message;
+            if (input.files[0] === file && cell.isConnected) message.textContent = error.message;
           }
         });
       }
       try {
         const response = await fetch("./catalogue.json");
-        if (!response.ok)
-          throw new Error(`Catalogue returned ${response.status}`);
+        if (!response.ok) throw new Error(`Catalogue returned ${response.status}`);
         const releases = await response.json();
         if (!releases.length) {
           status.textContent = "No firmware releases available yet.";
         } else {
           for (const [index, item] of releases.entries()) {
-            const built = item.targets.filter(
-              (result) => result.status === "success",
-            ).length;
+            const built = item.targets.filter((result) => result.status === "success").length;
             const label = `${item.tag}${index === 0 ? " · Latest" : ""} · ${date(item.published_at)} · ${built}/${item.targets.length} Built`;
             release.add(new Option(label, item.tag));
           }
@@ -311,21 +296,14 @@
               " · ",
               link("Build Logs", item.run),
             );
-            objectUrls.forEach((url) => URL.revokeObjectURL(url));
-            objectUrls = [];
+            objectUrls.forEach(revokeUrl);
             body.replaceChildren();
             for (const result of results) {
               const row = body.insertRow();
               row.insertCell().textContent = targetName(result);
               const build = row.insertCell();
-              build.className =
-                result.status === "success" ? "built" : "failed";
-              build.append(
-                link(
-                  result.status === "success" ? "Built" : "Failed",
-                  item.run,
-                ),
-              );
+              build.className = result.status === "success" ? "built" : "failed";
+              build.append(link(result.status === "success" ? "Built" : "Failed", item.run));
               const downloads = row.insertCell();
               for (const file of result.files) {
                 const name = file.name.endsWith("-full-flash.bin")
@@ -335,24 +313,18 @@
                 anchor.title = `${file.name}\nSHA-256: ${file.sha256}`;
                 downloads.append(anchor);
               }
-              if (!result.files.length)
-                downloads.append(link("See Build Logs", item.run));
+              if (!result.files.length) downloads.append(link("See Build Logs", item.run));
               flashing(row.insertCell(), item, result);
             }
-            const built = results.filter(
-              (result) => result.status === "success",
-            ).length;
+            const built = results.filter((result) => result.status === "success").length;
             status.textContent = `${built} built · ${results.length - built} failed · ${results.length} targets · Source ${item.commit.slice(0, 12)}`;
-            if (item.updated_at)
-              status.append(` · Files updated ${date(item.updated_at)}`);
+            if (item.updated_at) status.append(` · Files updated ${date(item.updated_at)}`);
             table.hidden = false;
           }
           function chooseRelease() {
             const previous = target.value;
             target.replaceChildren(new Option("All Targets", ""));
-            for (const result of releases.find(
-              (item) => item.tag === release.value,
-            ).targets) {
+            for (const result of releases.find((item) => item.tag === release.value).targets) {
               const availability =
                 result.status !== "success"
                   ? "Failed"
@@ -361,12 +333,7 @@
                     : result.flash
                       ? "Built · File Flashing"
                       : "Built · Downloads Only";
-              target.add(
-                new Option(
-                  `${targetName(result)} · ${availability}`,
-                  result.target,
-                ),
-              );
+              target.add(new Option(`${targetName(result)} · ${availability}`, result.target));
             }
             if ([...target.options].some((option) => option.value === previous))
               target.value = previous;

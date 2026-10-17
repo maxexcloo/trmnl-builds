@@ -259,6 +259,31 @@ def prepare(path, target):
         print(f"Applied: {patch_file.name}")
 
 
+def prune(tag):
+    """Remove obsolete build assets only after the current files are published."""
+    repo = os.environ["GITHUB_REPOSITORY"]
+    expected = {
+        path.name
+        for pattern in ("*/*.bin", "*/*-source.tar.gz")
+        for path in Path("results").glob(pattern)
+    }
+    expected.update(("manifest.json", "upstream-source.tar.gz"))
+    release = json.loads(run("gh", "api", f"repos/{repo}/releases/tags/{tag}"))
+    for asset in release["assets"]:
+        name = asset["name"]
+        if name not in expected and re.fullmatch(
+            r"[A-Za-z0-9][A-Za-z0-9_-]*-(?:application\.bin|full-flash\.bin|source\.tar\.gz)",
+            name,
+        ):
+            run(
+                "gh",
+                "api",
+                "--method",
+                "DELETE",
+                f"repos/{repo}/releases/assets/{asset['id']}",
+            )
+
+
 def releases(repo):
     pages = json.loads(
         run("gh", "api", "--paginate", "--slurp", f"repos/{repo}/releases?per_page=100")
@@ -276,6 +301,7 @@ if __name__ == "__main__":
     commands.add_parser("catalogue")
     commands.add_parser("discover").add_argument("path", type=Path)
     commands.add_parser("plan").add_argument("tag", nargs="?", default="")
+    commands.add_parser("prune").add_argument("tag")
     prepare_command = commands.add_parser("prepare")
     prepare_command.add_argument("path", type=Path)
     prepare_command.add_argument("target")
