@@ -1,3 +1,7 @@
+[tools]
+# The published shared CI configuration does not yet activate Oxfmt.
+oxfmt = "latest"
+
 [vars]
 # Native concurrency queues are not recognised by the shared Actionlint version.
 actionlint_args = "-ignore unexpected.key..queue..for..concurrency..section"
@@ -23,5 +27,11 @@ subprocess.run(
 PY
 '''
 
+[tasks."check:oxfmt"]
+run = "oxfmt --check --no-error-on-unmatched-pattern ."
+
 [tasks.fmt]
 depends = ["fmt:oxfmt", "fmt:python"]
+
+[tasks."fmt:oxfmt"]
+run = "oxfmt --write --no-error-on-unmatched-pattern ."
