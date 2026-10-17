@@ -1,6 +1,6 @@
 [tools]
 # The published shared CI configuration does not yet activate Oxfmt.
-oxfmt = "latest"
+oxfmt = "0.73.0"
 
 [vars]
 # Native concurrency queues are not recognised by the shared Actionlint version.
