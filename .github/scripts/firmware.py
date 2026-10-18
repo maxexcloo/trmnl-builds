@@ -236,6 +236,7 @@ def plan(tag):
         raise ValueError(f"Unsupported release tag: {tag!r}")
     # Rebuilds of older releases must not take over the Latest marker.
     output("latest", str(bool(tag) and tag == upstream[-1]["tag_name"]).lower())
+    output("repository", UPSTREAM)
     output("tag", tag)
 
 
