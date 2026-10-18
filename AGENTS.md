@@ -12,6 +12,7 @@
 - Keep firmware execution in read-only jobs and publishing in a separate job.
 - Keep orchestration in `.github/workflows/` and `.github/scripts/firmware.py`.
 - Keep the Pages app build-free, using ESP Web Tools, in `site/index.html`.
+  Updatecli vendors the ESP Web Tools release into `site/vendor/`; do not edit it.
 - Preserve upstream build flags, flash layouts and licences.
 
 ## Style
