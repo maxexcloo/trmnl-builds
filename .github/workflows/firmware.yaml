@@ -9,6 +9,8 @@ on:
         type: string
 permissions:
   contents: read
+env:
+  INCLUDE_GIT_HASH_IN_VERSION_NUMBER: "false"
 concurrency:
   cancel-in-progress: false
   group: firmware
@@ -21,6 +23,7 @@ jobs:
     outputs:
       builds: ${{ steps.targets.outputs.builds }}
       latest: ${{ steps.plan.outputs.latest }}
+      repository: ${{ steps.plan.outputs.repository }}
       sha: ${{ steps.source.outputs.sha }}
       tag: ${{ steps.plan.outputs.tag }}
       targets: ${{ steps.targets.outputs.targets }}
@@ -43,7 +46,7 @@ jobs:
           path: upstream
           persist-credentials: false
           ref: refs/tags/${{ steps.plan.outputs.tag }}
-          repository: usetrmnl/trmnl-firmware
+          repository: ${{ steps.plan.outputs.repository }}
           submodules: recursive
       - name: Record Source
         id: source
@@ -55,14 +58,12 @@ jobs:
         run: tar -C upstream -czf upstream-source.tar.gz --exclude=.git .
       - name: Set Up Python & uv
         if: steps.plan.outputs.tag != ''
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@v10.3.0
         with:
           activate-environment: true
       - name: Discover Firmware Targets
         id: targets
         if: steps.plan.outputs.tag != ''
-        env:
-          INCLUDE_GIT_HASH_IN_VERSION_NUMBER: "false"
         run: |
           uv sync --locked
           pio project config --json-output --project-dir upstream > config.json
@@ -93,7 +94,7 @@ jobs:
           path: upstream
           persist-credentials: false
           ref: ${{ needs.discover.outputs.sha }}
-          repository: usetrmnl/trmnl-firmware
+          repository: ${{ needs.discover.outputs.repository }}
           submodules: recursive
       - name: Prepare Patched Variant
         if: matrix.patched
@@ -105,7 +106,7 @@ jobs:
           mkdir -p "results/$NAME"
           tar -C upstream -czf "results/$NAME/$NAME-source.tar.gz" --exclude=.git .
       - name: Set Up Python & uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@v10.3.0
         with:
           activate-environment: true
       - name: Install Dependencies
@@ -115,7 +116,6 @@ jobs:
         run: pio run -e "$TARGET"
         working-directory: upstream
         env:
-          INCLUDE_GIT_HASH_IN_VERSION_NUMBER: "false"
           TARGET: ${{ matrix.target }}
       - name: Collect Result
         if: always()

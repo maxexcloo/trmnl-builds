@@ -1,6 +1,4 @@
 [vars]
-# Native concurrency queues are not recognised by the shared Actionlint version.
-actionlint_args = """-ignore 'unexpected key "queue" for "concurrency" section'"""
 python_test_runner = "uv run --locked python -B"
 
 # Development

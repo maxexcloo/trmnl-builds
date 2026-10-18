@@ -226,7 +226,11 @@ class FirmwareTests(unittest.TestCase):
                 firmware.plan(tag)
                 self.assertEqual(
                     output.call_args_list,
-                    [call("latest", latest), call("tag", expected)],
+                    [
+                        call("latest", latest),
+                        call("repository", firmware.UPSTREAM),
+                        call("tag", expected),
+                    ],
                 )
 
     def test_catalogue_skips_missing_release_assets(self):
