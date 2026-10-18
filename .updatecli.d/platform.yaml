@@ -20,7 +20,7 @@ targets:
     kind: file
     sourceid: version
     spec:
+      file: patches/*/*.patch
       matchpattern: (\n\+platform = https://github.com/pioarduino/platform-espressif32/releases/download/)[^/\s]+/platform-espressif32.zip
       replacepattern: ${1}{{ source "version" }}/platform-espressif32.zip
-      file: patches/*/*.patch
       searchpattern: true
