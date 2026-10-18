@@ -20,6 +20,7 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       builds: ${{ steps.targets.outputs.builds }}
+      latest: ${{ steps.plan.outputs.latest }}
       sha: ${{ steps.source.outputs.sha }}
       tag: ${{ steps.plan.outputs.tag }}
       targets: ${{ steps.targets.outputs.targets }}
@@ -172,6 +173,7 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           body_path: release-notes.md
+          make_latest: ${{ needs.discover.outputs.latest }}
           preserve_order: true
           tag_name: ${{ needs.discover.outputs.tag }}
           target_commitish: main

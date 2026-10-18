@@ -226,6 +226,8 @@ def plan(tag):
     tag = selected["tag_name"] if selected else ""
     if tag and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", tag):
         raise ValueError(f"Unsupported release tag: {tag!r}")
+    # Rebuilds of older releases must not take over the Latest marker.
+    output("latest", str(bool(tag) and tag == upstream[-1]["tag_name"]).lower())
     output("tag", tag)
 
 

@@ -205,24 +205,29 @@ class FirmwareTests(unittest.TestCase):
             self.assertTrue(result["patched"])
             self.assertEqual(result["target"], "hardware-patched")
 
-    def test_polling_builds_only_the_latest_missing_release(self):
+    def test_plan_selects_release_and_latest_marker(self):
         upstream = [
             {"prerelease": False, "published_at": f"2026-10-0{i}", "tag_name": f"v{i}"}
             for i in range(1, 5)
         ]
-        for owned, expected in [
-            ([], "v4"),
-            ([{"tag_name": "v1"}], "v4"),
-            ([{"tag_name": "v4"}], ""),
+        for tag, owned, expected, latest in [
+            ("", [], "v4", "true"),
+            ("", [{"tag_name": "v1"}], "v4", "true"),
+            ("", [{"tag_name": "v4"}], "", "false"),
+            ("v2", [{"tag_name": "v4"}], "v2", "false"),
+            ("v4", [{"tag_name": "v4"}], "v4", "true"),
         ]:
             with (
-                self.subTest(owned=owned),
+                self.subTest(tag=tag, owned=owned),
                 patch.dict(os.environ, GITHUB_REPOSITORY="owner/builds"),
                 patch.object(firmware, "releases", side_effect=[upstream, owned]),
                 patch.object(firmware, "output") as output,
             ):
-                firmware.plan("")
-                output.assert_called_once_with("tag", expected)
+                firmware.plan(tag)
+                self.assertEqual(
+                    output.call_args_list,
+                    [call("latest", latest), call("tag", expected)],
+                )
 
     def test_full_flash_chip_comes_from_image_header(self):
         with tempfile.TemporaryDirectory() as directory, contextlib.chdir(directory):
