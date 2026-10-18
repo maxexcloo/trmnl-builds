@@ -55,7 +55,7 @@ jobs:
         run: tar -C upstream -czf upstream-source.tar.gz --exclude=.git .
       - name: Set Up Python & uv
         if: steps.plan.outputs.tag != ''
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@v10.3.0
         with:
           activate-environment: true
       - name: Discover Firmware Targets
@@ -105,7 +105,7 @@ jobs:
           mkdir -p "results/$NAME"
           tar -C upstream -czf "results/$NAME/$NAME-source.tar.gz" --exclude=.git .
       - name: Set Up Python & uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@v10.3.0
         with:
           activate-environment: true
       - name: Install Dependencies
