@@ -1,26 +1,19 @@
 [vars]
 # Native concurrency queues are not recognised by the shared Actionlint version.
-actionlint_args = "-ignore unexpected.key..queue..for..concurrency..section"
+actionlint_args = """-ignore 'unexpected key "queue" for "concurrency" section'"""
 python_test_runner = "uv run --locked python -B"
 
 # Development
 [tasks.check]
 depends = ["check:actions", "check:oxfmt", "check:python", "check:updates", "test:python"]
 run = '''
-uv run --locked python - <<'PY'
-import pathlib
-import re
-import subprocess
-
-html = pathlib.Path("site/index.html").read_text()
-script = re.search(r'<script type="module">(.*?)</script>', html, re.S)[1]
-subprocess.run(
-    ["node", "--check", "--input-type=module"],
-    check=True,
-    input=script,
-    text=True,
-)
-PY
+node -e '
+const { execFileSync } = require("node:child_process");
+const { readFileSync } = require("node:fs");
+const html = readFileSync("site/index.html", "utf8");
+const script = html.match(/<script type="module">([\s\S]*?)<\/script>/)[1];
+execFileSync("node", ["--check", "--input-type=module"], { input: script, stdio: ["pipe", "inherit", "inherit"] });
+'
 '''
 
 [tasks.fmt]

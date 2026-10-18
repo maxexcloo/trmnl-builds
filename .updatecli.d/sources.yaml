@@ -17,7 +17,7 @@ targets:
     kind: file
     sourceid: version
     spec:
+      file: patches/*/*.patch
       matchpattern: (\n\+[^\n]*https://github.com/bitbank2/FastEPD.git#)[a-f0-9]{40}
       replacepattern: ${1}{{ source "version" }}
-      file: patches/*/*.patch
       searchpattern: true

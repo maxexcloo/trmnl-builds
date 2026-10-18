@@ -30,8 +30,16 @@ def catalogue():
         }
         manifest["targets"].sort(key=lambda result: result["target"])
         for result in manifest["targets"]:
+            files = []
             for item in result["files"]:
+                if item["name"] not in urls:
+                    print(f"::warning::{release['tag_name']} is missing {item['name']}")
+                    continue
                 item["url"] = urls[item["name"]]
+                files.append(item)
+            result["files"] = files
+            if result.get("flash") and result["flash"]["file"] not in urls:
+                result["flash"] = None
         manifest["updated_at"] = asset["updated_at"]
         manifest["url"] = release["html_url"]
         entries.append(manifest)
@@ -226,6 +234,8 @@ def plan(tag):
     tag = selected["tag_name"] if selected else ""
     if tag and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", tag):
         raise ValueError(f"Unsupported release tag: {tag!r}")
+    # Rebuilds of older releases must not take over the Latest marker.
+    output("latest", str(bool(tag) and tag == upstream[-1]["tag_name"]).lower())
     output("tag", tag)
 
 
