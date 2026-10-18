@@ -229,6 +229,53 @@ class FirmwareTests(unittest.TestCase):
                     [call("latest", latest), call("tag", expected)],
                 )
 
+    def test_catalogue_skips_missing_release_assets(self):
+        manifest = {
+            "published_at": "2026-10-01",
+            "tag": "v1",
+            "targets": [
+                {
+                    "files": [
+                        {"name": "a-application.bin"},
+                        {"name": "a-full-flash.bin"},
+                    ],
+                    "flash": {"file": "a-full-flash.bin"},
+                    "target": "a",
+                }
+            ],
+        }
+        release = {
+            "assets": [
+                {
+                    "browser_download_url": "https://example.com/" + name,
+                    "name": name,
+                    "updated_at": "2026-10-02",
+                    "url": "api/" + name,
+                }
+                for name in ("a-application.bin", "manifest.json")
+            ],
+            "html_url": "https://example.com/v1",
+            "tag_name": "v1",
+        }
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            contextlib.chdir(directory),
+            contextlib.redirect_stdout(io.StringIO()) as stdout,
+            patch.dict(os.environ, GITHUB_REPOSITORY="owner/builds"),
+            patch.object(firmware, "releases", return_value=[release]),
+            patch.object(firmware, "run", return_value=json.dumps(manifest)),
+        ):
+            Path("site").mkdir()
+            firmware.catalogue()
+            result = json.loads(Path("site/catalogue.json").read_text())[0]["targets"][
+                0
+            ]
+        self.assertEqual(
+            [item["name"] for item in result["files"]], ["a-application.bin"]
+        )
+        self.assertIsNone(result["flash"])
+        self.assertIn("v1 is missing a-full-flash.bin", stdout.getvalue())
+
     def test_full_flash_chip_comes_from_image_header(self):
         with tempfile.TemporaryDirectory() as directory, contextlib.chdir(directory):
             build = Path("upstream/.pio/build/hardware")

@@ -30,8 +30,16 @@ def catalogue():
         }
         manifest["targets"].sort(key=lambda result: result["target"])
         for result in manifest["targets"]:
+            files = []
             for item in result["files"]:
+                if item["name"] not in urls:
+                    print(f"::warning::{release['tag_name']} is missing {item['name']}")
+                    continue
                 item["url"] = urls[item["name"]]
+                files.append(item)
+            result["files"] = files
+            if result.get("flash") and result["flash"]["file"] not in urls:
+                result["flash"] = None
         manifest["updated_at"] = asset["updated_at"]
         manifest["url"] = release["html_url"]
         entries.append(manifest)
