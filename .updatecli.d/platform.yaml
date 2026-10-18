@@ -10,16 +10,17 @@ sources:
       owner: pioarduino
       repository: platform-espressif32
       token: '{{ env "GITHUB_TOKEN" }}'
+      # Stay on the reviewed 55.x (ESP-IDF 5.5) line; bump majors manually. Release order
+      # keeps -N fix releases, which semver would treat as prereleases.
       versionfilter:
-        kind: regex/semver
-        pattern: "*"
-        regex: ^([0-9]+\.[0-9]+\.[0-9]+)(?:-[0-9]+)?$
+        kind: regex
+        pattern: ^55\.[0-9]{2}\.[0-9]+(?:-[0-9]+)?$
 targets:
   patches:
     kind: file
     sourceid: version
     spec:
+      file: patches/*/*.patch
       matchpattern: (\n\+platform = https://github.com/pioarduino/platform-espressif32/releases/download/)[^/\s]+/platform-espressif32.zip
       replacepattern: ${1}{{ source "version" }}/platform-espressif32.zip
-      file: patches/*/*.patch
       searchpattern: true

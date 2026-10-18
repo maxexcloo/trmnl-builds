@@ -3,8 +3,12 @@ on:
   workflow_call:
   workflow_dispatch:
   push:
-    branches: [main]
-    paths: [".github/scripts/firmware.py", ".github/workflows/pages.yaml", "site/**"]
+    branches:
+      - main
+    paths:
+      - .github/scripts/firmware.py
+      - .github/workflows/pages.yaml
+      - site/**
 permissions:
   contents: read
   id-token: write
@@ -27,7 +31,7 @@ jobs:
           persist-credentials: false
           ref: main
       - name: Generate Catalogue
-        run: python .github/scripts/firmware.py catalogue
+        run: python3 .github/scripts/firmware.py catalogue
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Configure Pages

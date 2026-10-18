@@ -9,10 +9,25 @@ sources:
     spec:
       name: esp-web-tools
 targets:
-  pin:
-    kind: file
+  vendor:
+    kind: shell
     sourceid: version
     spec:
-      file: site/index.html
-      matchpattern: (https://unpkg.com/esp-web-tools@)[^/\s"]+
-      replacepattern: ${1}{{ source "version" }}
+      # Updatecli appends the source version; printed output reports a change.
+      command: |-
+        set -eu
+        vendor() {
+          directory=site/vendor/esp-web-tools
+          current=$(node -p "require('./$directory/package.json').version")
+          test "$current" != "$1" || return 0
+          echo "$1"
+          test "$DRY_RUN" = false || return 0
+          download=$(mktemp -d)
+          npm pack --silent --pack-destination "$download" "esp-web-tools@$1" >/dev/null
+          tar -xzf "$download"/*.tgz -C "$download"
+          rm -rf "$directory"
+          mkdir -p "$directory"
+          cp "$download"/package/LICENSE "$download"/package/package.json "$download"/package/dist/web/*.js "$directory"
+          rm -rf "$download"
+        }
+        vendor

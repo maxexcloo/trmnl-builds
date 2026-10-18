@@ -5,22 +5,17 @@
 - Discover targets from each upstream release; generate the catalogue from build
   results. Do not maintain target or release lists. Keep reviewed patches in
   `patches/<upstream-target>/*.patch`, applied in filename order.
+  Review patch-embedded platform bumps within the current major version.
 - Poll only the newest stable release; do not automatically backfill older releases.
+  Rebuilds of older releases must not change the Latest release.
 - Always build unchanged upstream targets. Discover separate patched variants
   from patch directories; failures must not block original builds. Publish the
   exact source archive for each variant. Do not fetch patches at build time.
 - Keep firmware execution in read-only jobs and publishing in a separate job.
 - Keep orchestration in `.github/workflows/` and `.github/scripts/firmware.py`.
 - Keep the Pages app build-free, using ESP Web Tools, in `site/index.html`.
+  Updatecli vendors the ESP Web Tools release into `site/vendor/`; do not edit it.
 - Preserve upstream build flags, flash layouts and licences.
-
-## Style
-
-- Prefer native GitHub Actions and maintained off-the-shelf actions over scripts
-  where they cover the task. Keep custom code limited to project-specific behaviour;
-  add dependencies only for a concrete need.
-- Format HTML, CSS and JavaScript with Oxfmt defaults. Keep user-facing wording
-  plain and direct; omit promotional phrases.
 
 ## Verification
 
