@@ -31,7 +31,7 @@ jobs:
           persist-credentials: false
       - name: Find the Next Release
         id: plan
-        run: python .github/scripts/firmware.py plan "$TAG"
+        run: python3 .github/scripts/firmware.py plan "$TAG"
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag }}
@@ -58,7 +58,6 @@ jobs:
         uses: astral-sh/setup-uv@v10.2.0
         with:
           activate-environment: true
-          python-version: "3.13"
       - name: Discover Firmware Targets
         id: targets
         if: steps.plan.outputs.tag != ''
@@ -109,7 +108,6 @@ jobs:
         uses: astral-sh/setup-uv@v10.2.0
         with:
           activate-environment: true
-          python-version: "3.13"
       - name: Install Dependencies
         run: uv sync --locked
       - name: Build Firmware
@@ -163,7 +161,7 @@ jobs:
         with:
           name: source
       - name: Prepare Release Manifest
-        run: python .github/scripts/firmware.py manifest "$TAG" "$SHA" "$TARGETS"
+        run: python3 .github/scripts/firmware.py manifest "$TAG" "$SHA" "$TARGETS"
         env:
           GH_TOKEN: ${{ github.token }}
           SHA: ${{ needs.discover.outputs.sha }}
@@ -183,14 +181,14 @@ jobs:
             results/*/*-source.tar.gz
             manifest.json
       - name: Remove Obsolete Release Assets
-        run: python .github/scripts/firmware.py prune "$TAG"
+        run: python3 .github/scripts/firmware.py prune "$TAG"
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.discover.outputs.tag }}
   pages:
     name: Pages
     if: always() && !cancelled() && needs.publish.result == 'success'
-    needs: [discover, build, publish]
+    needs: publish
     uses: ./.github/workflows/pages.yaml
     permissions:
       contents: read
