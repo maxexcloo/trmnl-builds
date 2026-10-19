@@ -1,9 +1,17 @@
-[vars]
-python_test_runner = "uv run --locked python -B"
+[env]
+# Lets the Renovate CLI re-vendor ESP Web Tools after bumping its pin.
+RENOVATE_ALLOWED_COMMANDS = '["^scripts/vendor_esp_web_tools\\.sh$"]'
 
 # Development
 [tasks.check]
-depends = ["check:actions", "check:oxfmt", "check:python", "check:updates", "test:python"]
+depends = [
+  "check:actions",
+  "check:oxfmt",
+  "check:python",
+  "check:shell",
+  "check:updates",
+  "test:python",
+]
 run = '''
 node -e '
 const { execFileSync } = require("node:child_process");

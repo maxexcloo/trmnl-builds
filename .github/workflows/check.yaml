@@ -22,6 +22,6 @@ jobs:
       - name: Set Up Shared Tools & Tasks
         uses: maxexcloo/dotfiles/.github/actions/mise@main
         with:
-          tools: actionlint node oxfmt ruff updatecli uv
+          tools: actionlint node@24 npm:renovate oxfmt ruff shellcheck uv
       - name: Run Checks
         run: mise run check
