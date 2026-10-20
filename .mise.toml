@@ -6,6 +6,7 @@ RENOVATE_ALLOWED_COMMANDS = '["^scripts/vendor_esp_web_tools\\.sh$"]'
 [tasks.check]
 depends = [
   "check:actions",
+  "check:mise",
   "check:oxfmt",
   "check:python",
   "check:shell",
@@ -23,4 +24,4 @@ execFileSync("node", ["--check", "--input-type=module"], { input: script, stdio:
 '''
 
 [tasks.fmt]
-depends = ["fmt:oxfmt", "fmt:python"]
+depends = ["fmt:mise", "fmt:oxfmt", "fmt:python"]
