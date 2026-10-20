@@ -1,4 +1,6 @@
 name: Firmware
+run-name: Firmware · ${{ inputs.tag || 'New Releases' }}
+
 on:
   schedule:
     - cron: "23 * * * *"
@@ -7,15 +9,18 @@ on:
       tag:
         description: Published upstream release tag (blank checks for new releases)
         type: string
+
 permissions:
   contents: read
-env:
-  INCLUDE_GIT_HASH_IN_VERSION_NUMBER: "false"
+
 concurrency:
   cancel-in-progress: false
   group: firmware
   queue: max
-run-name: Firmware · ${{ inputs.tag || 'New Releases' }}
+
+env:
+  INCLUDE_GIT_HASH_IN_VERSION_NUMBER: "false"
+
 jobs:
   discover:
     name: Discover
@@ -32,14 +37,14 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - name: Find the Next Release
-        id: plan
+      - id: plan
+        name: Find the Next Release
         run: python3 .github/scripts/firmware.py plan "$TAG"
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag }}
-      - name: Checkout Upstream
-        if: steps.plan.outputs.tag != ''
+      - if: steps.plan.outputs.tag != ''
+        name: Checkout Upstream
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
@@ -48,37 +53,38 @@ jobs:
           ref: refs/tags/${{ steps.plan.outputs.tag }}
           repository: ${{ steps.plan.outputs.repository }}
           submodules: recursive
-      - name: Record Source
-        id: source
+      - id: source
         if: steps.plan.outputs.tag != ''
+        name: Record Source
         run: |
           echo "sha=$(git -C upstream rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-      - name: Archive Upstream Source
-        if: steps.plan.outputs.tag != ''
+      - if: steps.plan.outputs.tag != ''
+        name: Archive Upstream Source
         run: tar -C upstream -czf upstream-source.tar.gz --exclude=.git .
-      - name: Set Up Python & uv
-        if: steps.plan.outputs.tag != ''
+      - if: steps.plan.outputs.tag != ''
+        name: Set Up Python & uv
         uses: astral-sh/setup-uv@v10.3.0
         with:
           activate-environment: true
-      - name: Discover Firmware Targets
-        id: targets
+      - id: targets
         if: steps.plan.outputs.tag != ''
+        name: Discover Firmware Targets
         run: |
           uv sync --locked
           pio project config --json-output --project-dir upstream > config.json
           python .github/scripts/firmware.py discover config.json
-      - name: Upload Source
-        if: steps.plan.outputs.tag != ''
+      - if: steps.plan.outputs.tag != ''
+        name: Upload Source
         uses: actions/upload-artifact@v7
         with:
           name: source
           overwrite: true
           path: upstream-source.tar.gz
           retention-days: 1
+
   build:
-    name: Build ${{ matrix.name }}
     if: needs.discover.outputs.tag != ''
+    name: Build ${{ matrix.name }}
     needs: discover
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -96,8 +102,8 @@ jobs:
           ref: ${{ needs.discover.outputs.sha }}
           repository: ${{ needs.discover.outputs.repository }}
           submodules: recursive
-      - name: Prepare Patched Variant
-        if: matrix.patched
+      - if: matrix.patched
+        name: Prepare Patched Variant
         env:
           NAME: ${{ matrix.name }}
           TARGET: ${{ matrix.target }}
@@ -111,21 +117,21 @@ jobs:
           activate-environment: true
       - name: Install Dependencies
         run: uv sync --locked
-      - name: Build Firmware
-        id: build
+      - id: build
+        name: Build Firmware
         run: pio run -e "$TARGET"
         working-directory: upstream
         env:
           TARGET: ${{ matrix.target }}
-      - name: Collect Result
-        if: always()
+      - if: always()
+        name: Collect Result
         run: python .github/scripts/firmware.py pack "$TARGET" "$OUTCOME" --name "$NAME"
         env:
           NAME: ${{ matrix.name }}
           OUTCOME: ${{ steps.build.outcome }}
           TARGET: ${{ matrix.target }}
-      - name: Upload Firmware
-        if: always()
+      - if: always()
+        name: Upload Firmware
         uses: actions/upload-artifact@v7
         with:
           if-no-files-found: error
@@ -138,11 +144,12 @@ jobs:
       max-parallel: 8
       matrix:
         include: ${{ fromJSON(needs.discover.outputs.builds) }}
+
   publish:
-    name: Publish
     if: always() && !cancelled() && needs.discover.result == 'success' && needs.discover.outputs.tag != ''
-    needs: [discover, build]
+    name: Publish
     runs-on: ubuntu-24.04
+    needs: [discover, build]
     permissions:
       contents: write
     steps:
@@ -185,9 +192,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.discover.outputs.tag }}
+
   pages:
-    name: Pages
     if: always() && !cancelled() && needs.publish.result == 'success'
+    name: Pages
     needs: publish
     uses: ./.github/workflows/pages.yaml
     permissions:

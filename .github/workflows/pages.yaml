@@ -1,4 +1,5 @@
 name: Pages
+
 on:
   workflow_call:
   workflow_dispatch:
@@ -9,14 +10,17 @@ on:
       - .github/scripts/firmware.py
       - .github/workflows/pages.yaml
       - site/**
+
 permissions:
   contents: read
   id-token: write
   pages: write
+
 concurrency:
   cancel-in-progress: false
   group: pages
   queue: max
+
 jobs:
   deploy:
     name: Deploy
@@ -41,8 +45,8 @@ jobs:
         with:
           name: github-pages-${{ github.run_attempt }}
           path: site
-      - name: Deploy Pages
-        id: deployment
+      - id: deployment
+        name: Deploy Pages
         uses: actions/deploy-pages@v5
         with:
           artifact_name: github-pages-${{ github.run_attempt }}

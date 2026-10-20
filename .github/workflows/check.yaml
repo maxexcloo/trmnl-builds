@@ -1,15 +1,19 @@
 name: Check
+
 on:
   pull_request:
   workflow_dispatch:
   push:
     branches:
       - main
+
 permissions:
   contents: read
+
 concurrency:
   cancel-in-progress: true
   group: check-${{ github.ref }}
+
 jobs:
   check:
     name: Check
