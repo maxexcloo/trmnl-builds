@@ -24,7 +24,7 @@ env:
 jobs:
   discover:
     name: Discover
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     outputs:
       builds: ${{ steps.targets.outputs.builds }}
       latest: ${{ steps.plan.outputs.latest }}
@@ -86,7 +86,7 @@ jobs:
     if: needs.discover.outputs.tag != ''
     name: Build ${{ matrix.name }}
     needs: discover
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 60
     steps:
       - name: Checkout
@@ -148,7 +148,7 @@ jobs:
   publish:
     if: always() && !cancelled() && needs.discover.result == 'success' && needs.discover.outputs.tag != ''
     name: Publish
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: [discover, build]
     permissions:
       contents: write
