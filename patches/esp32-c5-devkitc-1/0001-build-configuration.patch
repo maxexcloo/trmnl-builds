@@ -4,7 +4,7 @@
  
  [env:esp32-c5-devkitc-1]
  board = esp32-c5-devkitc-1
-+platform = https://github.com/pioarduino/platform-espressif32/releases/download/55.03.312-1/platform-espressif32.zip
++platform = https://github.com/pioarduino/platform-espressif32/releases/download/55.03.37/platform-espressif32.zip
  extra_scripts = pre:scripts/extra/git_version.py
  
  monitor_speed = 115200

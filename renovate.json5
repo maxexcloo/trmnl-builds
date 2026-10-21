@@ -26,14 +26,12 @@
   ],
   packageRules: [
     {
-      description: "Stay within the reviewed major; -N fix releases rank above their base release",
-      matchDepNames: ["pioarduino/platform-espressif32"],
+      // Newer platforms require Core 6.2.0 and LittleFS 1.22.1; upstream
+      // v1.8.17 needs older SCons and pins LittleFS 1.21.1.
+      allowedVersions: "/^55\\.03\\.37$/",
+      description: "Keep patched platforms compatible with upstream components and Core",
       versioning: "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(?:-(?<build>\\d+))?$",
-    },
-    {
-      enabled: false,
       matchDepNames: ["pioarduino/platform-espressif32"],
-      matchUpdateTypes: ["major"],
     },
     {
       matchDepNames: ["esp-web-tools"],

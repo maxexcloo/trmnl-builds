@@ -146,7 +146,7 @@ jobs:
         include: ${{ fromJSON(needs.discover.outputs.builds) }}
 
   publish:
-    if: always() && !cancelled() && needs.discover.result == 'success' && needs.discover.outputs.tag != ''
+    if: always() && !cancelled() && github.ref == 'refs/heads/main' && needs.discover.result == 'success' && needs.discover.outputs.tag != ''
     name: Publish
     runs-on: ubuntu-26.04
     needs: [discover, build]
