@@ -1,5 +1,6 @@
 import contextlib
 import difflib
+import hashlib
 import importlib.util
 import io
 import json
@@ -7,6 +8,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import call, patch
 
 spec = importlib.util.spec_from_file_location(
@@ -279,6 +281,117 @@ class FirmwareTests(unittest.TestCase):
         )
         self.assertIsNone(result["flash"])
         self.assertIn("v1 is missing a-full-flash.bin", stdout.getvalue())
+
+    def test_catalogue_verifies_download_checksum_before_writing(self):
+        binary = b"firmware image"
+        for downloaded in (binary, b"corrupt image!"):
+            with self.subTest(downloaded=downloaded):
+                manifest, release = self._downloadable_release("v1", binary)
+                with (
+                    tempfile.TemporaryDirectory() as directory,
+                    contextlib.chdir(directory),
+                    patch.dict(os.environ, GITHUB_REPOSITORY="owner/builds"),
+                    patch.object(firmware, "releases", return_value=[release]),
+                    patch.object(firmware, "run", return_value=json.dumps(manifest)),
+                    patch.object(firmware.subprocess, "run") as download,
+                ):
+                    Path("site").mkdir()
+                    download.side_effect = lambda *args, payload=downloaded, **kwargs: (
+                        Path("site/firmware/v1/hardware-full-flash.bin").write_bytes(
+                            payload
+                        )
+                    )
+                    if downloaded == binary:
+                        firmware.catalogue()
+                        result = json.loads(Path("site/catalogue.json").read_text())[0]
+                        self.assertEqual(
+                            result["targets"][0]["flash"]["path"],
+                            "firmware/v1/hardware-full-flash.bin",
+                        )
+                    else:
+                        with self.assertRaisesRegex(ValueError, "Checksum mismatch"):
+                            firmware.catalogue()
+                        self.assertFalse(Path("site/catalogue.json").exists())
+                    download.assert_called_once()
+
+    def test_catalogue_keeps_older_images_downloadable_when_pages_budget_is_full(self):
+        binary = b"small fixture"
+        budget = 750 * 1024 * 1024
+        newest, newest_release = self._downloadable_release("v2", binary)
+        older, older_release = self._downloadable_release("v1", binary)
+        newest["published_at"] = "2026-10-02"
+        newest["targets"][0]["flash"]["size"] = budget
+        original_stat = Path.stat
+
+        def downloaded_stat(path, *args, **kwargs):
+            if path.name == "hardware-full-flash.bin":
+                return SimpleNamespace(st_size=budget)
+            return original_stat(path, *args, **kwargs)
+
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            contextlib.chdir(directory),
+            patch.dict(os.environ, GITHUB_REPOSITORY="owner/builds"),
+            patch.object(
+                firmware, "releases", return_value=[older_release, newest_release]
+            ),
+            patch.object(
+                firmware, "run", side_effect=[json.dumps(older), json.dumps(newest)]
+            ),
+            patch.object(firmware.subprocess, "run") as download,
+            patch.object(Path, "stat", downloaded_stat),
+        ):
+            Path("site").mkdir()
+            download.side_effect = lambda *args, **kwargs: Path(
+                "site/firmware/v2/hardware-full-flash.bin"
+            ).write_bytes(binary)
+            firmware.catalogue()
+            entries = json.loads(Path("site/catalogue.json").read_text())
+            self.assertEqual([entry["tag"] for entry in entries], ["v2", "v1"])
+            self.assertIn("path", entries[0]["targets"][0]["flash"])
+            fallback = entries[1]["targets"][0]
+            self.assertNotIn("path", fallback["flash"])
+            self.assertEqual(
+                fallback["files"][0]["url"], "https://example.com/v1/firmware.bin"
+            )
+            self.assertEqual(
+                fallback["files"][0]["sha256"], hashlib.sha256(binary).hexdigest()
+            )
+            self.assertFalse(Path("site/firmware/v1").exists())
+            download.assert_called_once()
+
+    def _downloadable_release(self, tag, binary):
+        name = "hardware-full-flash.bin"
+        manifest = {
+            "published_at": "2026-10-01",
+            "tag": tag,
+            "targets": [
+                {
+                    "target": "hardware",
+                    "files": [
+                        {"name": name, "sha256": hashlib.sha256(binary).hexdigest()}
+                    ],
+                    "flash": {"file": name, "size": len(binary), "chipFamily": "ESP32"},
+                }
+            ],
+        }
+        release = {
+            "tag_name": tag,
+            "html_url": f"https://example.com/{tag}",
+            "assets": [
+                {
+                    "name": name,
+                    "browser_download_url": f"https://example.com/{tag}/firmware.bin",
+                },
+                {
+                    "name": "manifest.json",
+                    "browser_download_url": f"https://example.com/{tag}/manifest.json",
+                    "url": "api/manifest",
+                    "updated_at": "2026-10-02",
+                },
+            ],
+        }
+        return manifest, release
 
     def test_full_flash_chip_comes_from_image_header(self):
         with tempfile.TemporaryDirectory() as directory, contextlib.chdir(directory):
