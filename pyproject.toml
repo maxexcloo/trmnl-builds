@@ -6,8 +6,7 @@ dependencies = [
   "esptool",
   # Upstream tool installers invoke python -m pip.
   "pip",
-  # 6.2.0 breaks upstream ESP-IDF builds: pioarduino/platform-espressif32#529.
-  "platformio!=6.2.0",
+  "platformio",
 ]
 
 [tool.uv]

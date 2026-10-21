@@ -20,7 +20,8 @@ selected in the installer, which checks their checksum before flashing.
 Actions checks every hour and only builds the newest stable release, and only if
 it hasn't been built yet. To rebuild a release by hand, use **Actions → Firmware → Run
 Workflow** and enter its tag. Downloads, source, checksums and build results are
-in [Releases](https://github.com/maxexcloo/trmnl-builds/releases).
+in [Releases](https://github.com/maxexcloo/trmnl-builds/releases). Workflow runs on
+branches other than `main` build without publishing.
 
 Targets without a supported full-flash image only offer downloads. A full-flash
 install overwrites saved device settings, even without a separate erase step. To
