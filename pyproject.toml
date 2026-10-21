@@ -6,7 +6,8 @@ dependencies = [
   "esptool",
   # Upstream tool installers invoke python -m pip.
   "pip",
-  "platformio",
+  # Upstream's older platforms break Core 6.2.0's SCons: pioarduino/platform-espressif32#529.
+  "platformio!=6.2.0",
 ]
 
 [tool.uv]
