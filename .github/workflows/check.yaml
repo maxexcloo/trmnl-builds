@@ -17,7 +17,7 @@ concurrency:
 jobs:
   check:
     name: Check
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -26,6 +26,6 @@ jobs:
       - name: Set Up Shared Tools & Tasks
         uses: maxexcloo/dotfiles/.github/actions/mise@main
         with:
-          tools: actionlint node node@24 npm:renovate oxfmt ruff shellcheck uv
+          tools: actionlint node node@24 npm:renovate oxfmt ruff uv
       - name: Run Checks
         run: mise run check

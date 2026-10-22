@@ -1,3 +1,0 @@
-# Ubuntu 26.04 is generally available; Actionlint 1.7.12 omits its hosted label.
-self-hosted-runner:
-  labels: [ubuntu-26.04]
