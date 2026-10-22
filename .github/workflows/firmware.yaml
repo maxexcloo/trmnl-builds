@@ -108,7 +108,7 @@ jobs:
           NAME: ${{ matrix.name }}
           TARGET: ${{ matrix.target }}
         run: |
-          python3 .github/scripts/firmware.py prepare upstream "$TARGET"
+          git -C upstream apply "$PWD/patches/$TARGET"/*.patch
           mkdir -p "results/$NAME"
           tar -C upstream -czf "results/$NAME/$NAME-source.tar.gz" --exclude=.git .
       - name: Set Up Python & uv
@@ -125,7 +125,7 @@ jobs:
           TARGET: ${{ matrix.target }}
       - if: always()
         name: Collect Result
-        run: python .github/scripts/firmware.py pack "$TARGET" "$OUTCOME" --name "$NAME"
+        run: python .github/scripts/firmware.py pack "$TARGET" "$OUTCOME" "$NAME"
         env:
           NAME: ${{ matrix.name }}
           OUTCOME: ${{ steps.build.outcome }}
@@ -187,11 +187,6 @@ jobs:
             results/*/*.bin
             results/*/*-source.tar.gz
             manifest.json
-      - name: Remove Obsolete Release Assets
-        run: python3 .github/scripts/firmware.py prune "$TAG"
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ needs.discover.outputs.tag }}
 
   pages:
     if: always() && !cancelled() && needs.publish.result == 'success'

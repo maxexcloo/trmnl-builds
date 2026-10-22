@@ -1,5 +1,4 @@
 import contextlib
-import difflib
 import hashlib
 import importlib.util
 import io
@@ -19,48 +18,6 @@ spec.loader.exec_module(firmware)
 
 
 class FirmwareTests(unittest.TestCase):
-    def test_prune_removes_only_obsolete_build_assets(self):
-        names = [
-            "hardware-application.bin",
-            "hardware-full-flash.bin",
-            "failed-application.bin",
-            "removed-patched-source.tar.gz",
-            "current-patched-source.tar.gz",
-            "manifest.json",
-            "upstream-source.tar.gz",
-            "notes.txt",
-            "custom.bin",
-        ]
-        assets = [{"id": index, "name": name} for index, name in enumerate(names)]
-        with tempfile.TemporaryDirectory() as directory, contextlib.chdir(directory):
-            current = Path("results/hardware")
-            current.mkdir(parents=True)
-            (current / "hardware-application.bin").touch()
-            source = Path("results/current-patched")
-            source.mkdir()
-            (source / "current-patched-source.tar.gz").touch()
-            with (
-                patch.dict(os.environ, GITHUB_REPOSITORY="owner/builds"),
-                patch.object(
-                    firmware, "run", return_value=json.dumps({"assets": assets})
-                ) as run,
-            ):
-                firmware.prune("v1")
-            self.assertEqual(
-                run.call_args_list,
-                [call("gh", "api", "repos/owner/builds/releases/tags/v1")]
-                + [
-                    call(
-                        "gh",
-                        "api",
-                        "--method",
-                        "DELETE",
-                        f"repos/owner/builds/releases/assets/{index}",
-                    )
-                    for index in (1, 2, 3)
-                ],
-            )
-
     def test_discovery_excludes_tests_and_bases_but_keeps_devices(self):
         config = [
             ["env:base", [["board", "esp32"]]],
@@ -121,73 +78,12 @@ class FirmwareTests(unittest.TestCase):
                 ],
             )
 
-    def test_prepare_preserves_native_waveform_and_is_idempotent(self):
-        original = (
-            "    int rc = bbep.setCustomMatrix(u8_graytable, sizeof(u8_graytable));\n"
-            '    Log_info("%s [%d]: setCustomMatrix returned %d\\r\\n", __FILE__, __LINE__, rc);\n'
-        )
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            (root / "src").mkdir()
-            display = root / "src/display.cpp"
-            display.write_text("before\n {\n" + original + "\nafter\n")
-            with contextlib.redirect_stdout(io.StringIO()):
-                firmware.prepare(root, "TRMNL_X_PAPERS3")
-                prepared = display.read_text()
-                firmware.prepare(root, "TRMNL_X_PAPERS3")
-            self.assertEqual(display.read_text(), prepared)
-            self.assertNotIn("setCustomMatrix", prepared)
-            self.assertIn("native Paper S3 greyscale waveform", prepared)
-            self.assertTrue(prepared.startswith("before\n"))
-            self.assertTrue(prepared.endswith("after\n"))
-
-    def test_prepare_rejects_changed_source_without_writing(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            (root / "src").mkdir()
-            display = root / "src/display.cpp"
-            source = "bbep.setCustomMatrix(u8_graytable, new_size);\n"
-            display.write_text(source)
-            with self.assertRaisesRegex(ValueError, "does not match upstream"):
-                firmware.prepare(root, "TRMNL_X_PAPERS3")
-            self.assertEqual(display.read_text(), source)
-
-    def test_prepare_discovers_patch_files_in_order(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            patches = root / "patches/example"
-            patches.mkdir(parents=True)
-            for filename, patch_name in [
-                ("a.txt", "0002-a.patch"),
-                ("b.txt", "0001-b.patch"),
-            ]:
-                (root / filename).write_text("original\n")
-                diff = difflib.unified_diff(
-                    ["original\n"],
-                    ["patched\n"],
-                    fromfile=f"a/{filename}",
-                    tofile=f"b/{filename}",
-                )
-                (patches / patch_name).write_text("".join(diff))
-            output = io.StringIO()
-            with (
-                patch.object(firmware, "PATCHES", root / "patches"),
-                contextlib.redirect_stdout(output),
-            ):
-                firmware.prepare(root, "example")
-            self.assertEqual(
-                output.getvalue().splitlines(),
-                ["Applied: 0001-b.patch", "Applied: 0002-a.patch"],
-            )
-            self.assertEqual((root / "a.txt").read_text(), "patched\n")
-            self.assertEqual((root / "b.txt").read_text(), "patched\n")
-
     def test_pack_keeps_original_and_patched_variants_separate(self):
         with tempfile.TemporaryDirectory() as directory, contextlib.chdir(directory):
             build = Path("upstream/.pio/build/hardware")
             build.mkdir(parents=True)
             (build / "firmware.bin").write_bytes(b"original")
-            firmware.pack("hardware", "success")
+            firmware.pack("hardware", "success", "hardware")
             (build / "firmware.bin").write_bytes(b"patched")
             firmware.pack("hardware", "success", "hardware-patched")
             self.assertEqual(
@@ -402,7 +298,7 @@ class FirmwareTests(unittest.TestCase):
             image[0] = 0xE9
             image[12] = 9
             (build / "merged_firmware.bin").write_bytes(image)
-            firmware.pack("hardware", "success")
+            firmware.pack("hardware", "success", "hardware")
             result = json.loads(Path("results/hardware/result.json").read_text())
             self.assertEqual(result["flash"]["chipFamily"], "ESP32-S3")
             self.assertEqual(result["flash"]["file"], "hardware-full-flash.bin")
@@ -412,7 +308,7 @@ class FirmwareTests(unittest.TestCase):
             build = Path("upstream/.pio/build/hardware")
             build.mkdir(parents=True)
             (build / "firmware.bin").write_bytes(b"stale")
-            firmware.pack("hardware", "failure")
+            firmware.pack("hardware", "failure", "hardware")
             result = json.loads(Path("results/hardware/result.json").read_text())
             self.assertEqual(result["files"], [])
             self.assertEqual(list(Path("results").rglob("*.bin")), [])
