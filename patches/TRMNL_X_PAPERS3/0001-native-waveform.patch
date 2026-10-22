@@ -1,3 +1,6 @@
+Remove TRMNL's shared greyscale waveform override so FastEPD uses its native
+Paper S3 panel waveform. The patch targets the source context of upstream v1.8.17.
+
 --- a/src/display.cpp
 +++ b/src/display.cpp
 @@ -1892,4 +1892,3 @@

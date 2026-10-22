@@ -1,3 +1,6 @@
+Use the Arduino framework for the existing target. The inherited hybrid framework
+uses ESP-IDF 4.4, which cannot resolve the project's ESP-IDF 5 component requirements.
+
 --- a/platformio.ini
 +++ b/platformio.ini
 @@ -300,6 +300,7 @@

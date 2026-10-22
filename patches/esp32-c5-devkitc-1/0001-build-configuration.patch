@@ -1,3 +1,6 @@
+Use a platform that includes the ESP32-C5 board definition. Keep the upstream
+board settings, application dependencies and partition layout.
+
 --- a/platformio.ini
 +++ b/platformio.ini
 @@ -957,6 +957,7 @@

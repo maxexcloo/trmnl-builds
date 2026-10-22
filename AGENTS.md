@@ -4,8 +4,10 @@
 
 - Discover targets from each upstream release; generate the catalogue from build
   results. Do not maintain target or release lists. Keep reviewed patches in
-  `patches/<upstream-target>/*.patch`, applied in filename order.
-  Review patch-embedded platform bumps within the current major version.
+  `patches/<upstream-target>/*.patch`, applied in filename order, with the
+  reason above the diff. Bump patch-embedded platforms by hand: newer
+  pioarduino platforms need PlatformIO Core 6.2.0, which upstream's older
+  platforms cannot use.
 - Poll only the newest stable release; do not automatically backfill older releases.
   Rebuilds of older releases must not change the Latest release.
 - Always build unchanged upstream targets. Discover separate patched variants
