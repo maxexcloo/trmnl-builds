@@ -4,7 +4,6 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>TRMNL Firmware Installer</title>
-    <script type="module" src="vendor/esp-web-tools/install-button.js"></script>
     <style>
       :root {
         color-scheme: light dark;
@@ -176,6 +175,8 @@
       SHA-256 checksums. Firmware is licensed under GPL-3.0.
     </footer>
     <script type="module">
+      // renovate: datasource=npm depName=esp-web-tools
+      import "https://unpkg.com/esp-web-tools@10.4.0/dist/web/install-button.js";
       const body = document.querySelector("tbody");
       const release = document.querySelector("#release");
       const source = document.querySelector("#source");

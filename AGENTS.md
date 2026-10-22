@@ -15,13 +15,12 @@
   exact source archive for each variant. Do not fetch patches at build time.
 - Keep firmware execution in read-only jobs and publishing in a separate job.
 - Keep orchestration in `.github/workflows/` and `.github/scripts/firmware.py`.
-- Keep the Pages app build-free, using ESP Web Tools, in `site/index.html`.
-  `scripts/vendor_esp_web_tools.sh` vendors the pinned ESP Web Tools release into
-  `site/vendor/`; do not edit it.
+- Keep the Pages app build-free in `site/index.html`, importing the pinned ESP
+  Web Tools release from unpkg.
 - Preserve upstream build flags, flash layouts and licences.
 
 ## Verification
 
 - Use uv with the committed lockfile.
-- Run `mise run check` for formatting, Python, workflow, shell, Renovate
+- Run `mise run check` for formatting, Python, workflow, Renovate
   configuration and JavaScript syntax checks, including the firmware tests.
