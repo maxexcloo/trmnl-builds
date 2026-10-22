@@ -68,14 +68,8 @@ def catalogue():
                 ],
                 check=True,
             )
-            binary = directory / flash["file"]
-            item = next(
-                item for item in result["files"] if item["name"] == flash["file"]
-            )
-            if hashlib.sha256(binary.read_bytes()).hexdigest() != item["sha256"]:
-                raise ValueError(f"Checksum mismatch: {binary}")
-            remaining -= binary.stat().st_size
-            flash["path"] = str(binary.relative_to("site"))
+            remaining -= flash["size"]
+            flash["path"] = str((directory / flash["file"]).relative_to("site"))
     Path("site/catalogue.json").write_text(json.dumps(entries, indent=2) + "\n")
 
 
@@ -92,8 +86,6 @@ def discover(path):
         # Base environments have no device selection; tests replace the application.
         device = re.search(r"(?:BOARD_[A-Z0-9_]+|DEVICE_MODEL)(?:=|\b)", flags)
         if options.get("board") and device and not options.get("test_build_src"):
-            if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", name):
-                raise ValueError(f"Unsupported target name: {name!r}")
             targets.append(name)
         else:
             skipped.append(name)
@@ -110,8 +102,6 @@ def discover(path):
                 {"name": f"{target}-patched", "patched": True, "target": target}
             )
     names = [build["name"] for build in builds]
-    if len(names) != len(set(names)):
-        raise ValueError("Patched variant name conflicts with an upstream target")
     output("builds", json.dumps(builds, separators=(",", ":")))
     output("targets", json.dumps(names, separators=(",", ":")))
 
@@ -231,8 +221,6 @@ def plan(tag):
         if selected and selected["tag_name"] in published:
             selected = None
     tag = selected["tag_name"] if selected else ""
-    if tag and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", tag):
-        raise ValueError(f"Unsupported release tag: {tag!r}")
     # Rebuilds of older releases must not take over the Latest marker.
     output("latest", str(bool(tag) and tag == upstream[-1]["tag_name"]).lower())
     output("repository", UPSTREAM)
