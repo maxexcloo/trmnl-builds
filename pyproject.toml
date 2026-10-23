@@ -1,7 +1,7 @@
 [project]
 name = "trmnl-builds"
 # ESP-IDF tooling rejects Python 3.15.
-requires-python = ">=3.13,<3.15"
+requires-python = ">=3.15,<3.16"
 version = "0.0.0"
 dependencies = [
   "esptool",
