@@ -21,6 +21,5 @@
 
 ## Verification
 
-- Use uv with the committed lockfile.
 - Run `mise run check` for formatting, Python, workflow, Renovate
   configuration and JavaScript syntax checks, including the firmware tests.
