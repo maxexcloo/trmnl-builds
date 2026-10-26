@@ -315,8 +315,7 @@
               flashing(row.insertCell(), item, result);
             }
             const built = results.filter((result) => result.status === "success").length;
-            status.textContent = `${built} built · ${results.length - built} failed · ${results.length} targets · Source ${item.commit.slice(0, 12)}`;
-            if (item.updated_at) status.append(` · Files updated ${date(item.updated_at)}`);
+            status.textContent = `${built} built · ${results.length - built} failed · ${results.length} targets · Source ${item.commit.slice(0, 12)} · Files updated ${date(item.updated_at)}`;
             table.hidden = false;
           }
           function chooseRelease() {
