@@ -13,11 +13,12 @@ old driver lacks APIs called by the display code.
  board_build.f_cpu = 240000000L
  board_build.f_flash   = 80000000L
  board_build.flash_mode = qio
-@@ -342,7 +342,7 @@
+@@ -342,7 +342,8 @@
  lib_ldf_mode = deep
  lib_deps =
  	${deps_app.lib_deps}
 -    https://github.com/bitbank2/FastEPD/archive/refs/tags/1.4.6.zip
++    # renovate: datasource=git-refs depName=https://github.com/bitbank2/FastEPD
 +    https://github.com/bitbank2/FastEPD.git#60d49456654c20485487d927f368387b69012ac6
  
  lib_ignore = bb_epaper

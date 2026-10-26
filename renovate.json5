@@ -1,18 +1,4 @@
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: ["github>maxexcloo/dotfiles//renovate/default.json5"],
-  // Only lines a patch adds may change; removed and context lines must still
-  // match upstream for the patch to apply.
-  customManagers: [
-    {
-      customType: "regex",
-      datasourceTemplate: "git-refs",
-      description: "Git dependencies added by patches follow the default branch",
-      managerFilePatterns: ["/\\.patch$/"],
-      matchStrings: [
-        "\\n\\+[^\\n]*https://github\\.com/(?<depName>[^/\\s]+/[^/\\s]+?)\\.git#(?<currentDigest>[a-f0-9]{40})",
-      ],
-      packageNameTemplate: "https://github.com/{{depName}}",
-    },
-  ],
 }
