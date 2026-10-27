@@ -1,4 +1,11 @@
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: ["github>maxexcloo/dotfiles//renovate/default.json5"],
+  packageRules: [
+    {
+      description: "Keep the requires-python hold in pyproject.toml",
+      allowedVersions: "<3.15",
+      matchDepNames: ["python"],
+    },
+  ],
 }
