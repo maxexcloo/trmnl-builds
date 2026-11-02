@@ -269,14 +269,14 @@ wheels = [
 
 [[package]]
 name = "esp-pylib"
-version = "1.2.0"
+version = "1.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "rich" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c6/af/ebfab3ce5babdf0bc068d13205c3b28a4fe55f41d7cc229e1991f3f07e43/esp_pylib-1.2.0.tar.gz", hash = "sha256:51f0c44a0f7a92fdded9cab54bde92441b22b464f7d684ed179afb57000bed70", size = 100301, upload-time = "2026-10-07T07:44:12.903Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b7/f1/f01bc72408264940589976e1973ca0c978fdc77ef377cca01a0cc42c9418/esp_pylib-1.2.1.tar.gz", hash = "sha256:c0854cc57b86e2745e9f7ac820d5d5e8a9f2c2d93caf12623c419b8d08d852f6", size = 100567, upload-time = "2026-11-02T15:16:05.792Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0d/63/5cbd52f1993887756b7d60d4b7a8a99ee0b2efda7526ae43d3fa2eefbf7f/esp_pylib-1.2.0-py3-none-any.whl", hash = "sha256:581fd31eb20db4b80519fe883eaeacf5b3c6a2c0b7cce353a7d326ae7cbd4f5f", size = 59355, upload-time = "2026-10-07T07:44:11.643Z" },
+    { url = "https://files.pythonhosted.org/packages/73/9b/7ecb4bf9b563431aa9c0b5f3579b57d1f6d2a9903f5c1f2d951d977561bf/esp_pylib-1.2.1-py3-none-any.whl", hash = "sha256:fb05017676200e38dc182013c994e62d9088d377081c88562e14a2f5aaae6456", size = 59344, upload-time = "2026-11-02T15:16:04.488Z" },
 ]
 
 [package.optional-dependencies]
