@@ -1,5 +1,6 @@
-Inherit the shared application dependencies and library settings. The upstream
-environment references the shared flags but omits the shared environment.
+Inherit the shared ESP32 environment whose build flags upstream already uses:
+its min_spiffs partition layout, SPIFFS filesystem, deep library dependency
+finder and library exclusions. The original target builds without them.
 
 --- a/platformio.ini
 +++ b/platformio.ini
