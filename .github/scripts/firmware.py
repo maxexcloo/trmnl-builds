@@ -101,15 +101,14 @@ def discover(path):
             builds.append(
                 {"name": f"{target}-patched", "patched": True, "target": target}
             )
-    names = [build["name"] for build in builds]
     output("builds", json.dumps(builds, separators=(",", ":")))
-    output("targets", json.dumps(names, separators=(",", ":")))
 
 
-def manifest(tag, sha, targets):
+def manifest(tag, sha, builds):
     repo = os.environ["GITHUB_REPOSITORY"]
     results = []
-    for target in json.loads(targets):
+    for build in json.loads(builds):
+        target = build["name"]
         path = Path("results") / target / "result.json"
         results.append(
             json.loads(path.read_text())
@@ -234,8 +233,8 @@ def releases(repo):
     return [release for page in pages for release in page if not release["draft"]]
 
 
-def run(*args, **kwargs):
-    return subprocess.check_output(args, text=True, **kwargs).strip()
+def run(*args):
+    return subprocess.check_output(args, text=True).strip()
 
 
 if __name__ == "__main__":
@@ -251,6 +250,6 @@ if __name__ == "__main__":
     release = commands.add_parser("manifest")
     release.add_argument("tag")
     release.add_argument("sha")
-    release.add_argument("targets")
+    release.add_argument("builds")
     args = vars(parser.parse_args())
     globals()[args.pop("command")](**args)

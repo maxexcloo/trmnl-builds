@@ -44,7 +44,8 @@ class FirmwareTests(unittest.TestCase):
             ):
                 firmware.discover(path)
             self.assertEqual(
-                json.loads(output.call_args.args[1]), ["hardware", "model"]
+                [build["name"] for build in json.loads(output.call_args.args[1])],
+                ["hardware", "model"],
             )
 
     def test_discovery_adds_only_targets_with_patches(self):
@@ -64,12 +65,9 @@ class FirmwareTests(unittest.TestCase):
                 contextlib.redirect_stdout(io.StringIO()),
             ):
                 firmware.discover(path)
-            values = {
-                call.args[0]: json.loads(call.args[1]) for call in output.call_args_list
-            }
-            self.assertEqual(values["targets"], ["alpha", "alpha-patched", "beta"])
+            output.assert_called_once()
             self.assertEqual(
-                values["builds"],
+                json.loads(output.call_args.args[1]),
                 [
                     {"name": "alpha", "patched": False, "target": "alpha"},
                     {"name": "alpha-patched", "patched": True, "target": "alpha"},
