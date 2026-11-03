@@ -191,9 +191,10 @@ class FirmwareTests(unittest.TestCase):
                 firmware, "releases", return_value=[older_release, newest_release]
             ),
             patch.object(
-                firmware, "run", side_effect=[json.dumps(older), json.dumps(newest)]
-            ),
-            patch.object(firmware.subprocess, "run") as download,
+                firmware,
+                "run",
+                side_effect=[json.dumps(older), json.dumps(newest), ""],
+            ) as run,
         ):
             Path("site").mkdir()
             firmware.catalogue()
@@ -209,7 +210,9 @@ class FirmwareTests(unittest.TestCase):
                 fallback["files"][0]["sha256"], hashlib.sha256(binary).hexdigest()
             )
             self.assertFalse(Path("site/firmware/v1").exists())
-            download.assert_called_once()
+            self.assertEqual(
+                run.call_args.args[:4], ("gh", "release", "download", "v2")
+            )
 
     def _downloadable_release(self, tag, binary):
         name = "hardware-full-flash.bin"
