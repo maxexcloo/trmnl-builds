@@ -1,14 +1,5 @@
 # Development
 [tasks.check]
-depends = [
-  "check:actions",
-  "check:mise",
-  "check:oxfmt",
-  "check:python",
-  "check:updates",
-  "check:whitespace",
-  "test:python",
-]
 run = '''
 node -e '
 const { execFileSync } = require("node:child_process");
@@ -18,3 +9,12 @@ const script = html.match(/<script type="module">([\s\S]*?)<\/script>/)[1];
 execFileSync("node", ["--check", "--input-type=module"], { input: script, stdio: ["pipe", "inherit", "inherit"] });
 '
 '''
+depends = [
+  "check:actions",
+  "check:mise",
+  "check:oxfmt",
+  "check:python",
+  "check:updates",
+  "check:whitespace",
+  "test:python",
+]
