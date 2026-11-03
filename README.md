@@ -34,8 +34,7 @@ Install the [shared Mise configuration](https://github.com/maxexcloo/dotfiles#sh
 before running local Mise tasks.
 
 Firmware builds run on GitHub. The site uses ESP Web Tools with no frontend
-build, and uv manages the build dependencies. To run the same configuration,
-JavaScript and firmware planning checks as CI:
+build, and uv manages the build dependencies. To run the same checks as CI:
 
 ```sh
 mise run check
