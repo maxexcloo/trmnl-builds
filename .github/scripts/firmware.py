@@ -53,20 +53,17 @@ def catalogue():
                 continue
             directory = Path("site/firmware") / entry["tag"]
             directory.mkdir(parents=True, exist_ok=True)
-            subprocess.run(
-                [
-                    "gh",
-                    "release",
-                    "download",
-                    entry["tag"],
-                    "--dir",
-                    str(directory),
-                    "--pattern",
-                    flash["file"],
-                    "--repo",
-                    repo,
-                ],
-                check=True,
+            run(
+                "gh",
+                "release",
+                "download",
+                entry["tag"],
+                "--dir",
+                str(directory),
+                "--pattern",
+                flash["file"],
+                "--repo",
+                repo,
             )
             remaining -= flash["size"]
             flash["path"] = str((directory / flash["file"]).relative_to("site"))
