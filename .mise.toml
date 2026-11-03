@@ -18,6 +18,3 @@ const script = html.match(/<script type="module">([\s\S]*?)<\/script>/)[1];
 execFileSync("node", ["--check", "--input-type=module"], { input: script, stdio: ["pipe", "inherit", "inherit"] });
 '
 '''
-
-[tasks.fmt]
-depends = ["fmt:mise", "fmt:oxfmt", "fmt:python"]
