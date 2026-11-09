@@ -17,10 +17,10 @@ such as desktop Chrome or Edge, and connect the device with a USB data cable.
 Recent images can be flashed directly. Older images can be downloaded and then
 selected in the installer, which checks their checksum before flashing.
 
-Actions checks every hour and only builds the newest stable release, and only if
-it hasn't been built yet. To rebuild a release by hand, use **Actions → Firmware → Run
-Workflow** and enter its tag. Downloads, source, checksums and build results are
-in [Releases](https://github.com/maxexcloo/trmnl-builds/releases). Workflow runs on
+The newest stable release is built automatically. To rebuild a release by hand,
+use **Actions → Firmware → Run Workflow** and enter its tag. Downloads, source,
+checksums and build results are in
+[Releases](https://github.com/maxexcloo/trmnl-builds/releases). Workflow runs on
 branches other than `main` build without publishing.
 
 Targets without a supported full-flash image only offer downloads. A full-flash
@@ -33,8 +33,7 @@ succeeds isn't guaranteed to work on the hardware.
 Install the [shared Mise configuration](https://github.com/maxexcloo/dotfiles#shared-tools--tasks)
 before running local Mise tasks.
 
-Firmware builds run on GitHub. The site uses ESP Web Tools with no frontend
-build, and uv manages the build dependencies. To run the same checks as CI:
+To run the same checks as CI:
 
 ```sh
 mise run check
