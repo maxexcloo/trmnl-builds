@@ -1,4 +1,4 @@
-# Project Rules
+# AGENTS.md
 
 ## Structure
 
@@ -14,12 +14,10 @@
   from patch directories; failures must not block original builds. Publish the
   exact source archive for each variant. Do not fetch patches at build time.
 - Keep firmware execution in read-only jobs and publishing in a separate job.
-- Keep orchestration in `.github/workflows/` and `.github/scripts/firmware.py`.
 - Keep the Pages app build-free in `site/index.html`, importing the pinned ESP
   Web Tools release from unpkg.
 - Preserve upstream build flags, flash layouts and licences.
 
 ## Verification
 
-- Run `mise run check` for formatting, Python, workflow, Renovate
-  configuration and JavaScript syntax checks, including the firmware tests.
+- Run `mise run check`.
