@@ -9,6 +9,7 @@ const script = html.match(/<script type="module">([\s\S]*?)<\/script>/)[1];
 execFileSync("node", ["--check", "--input-type=module"], { input: script, stdio: ["pipe", "inherit", "inherit"] });
 '
 '''
+# Repeats the shared check dependencies to add the site syntax check.
 depends = [
   "check:actions",
   "check:mise",
