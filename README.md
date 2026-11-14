@@ -1,6 +1,6 @@
 # TRMNL Builds
 
-Builds firmware from [TRMNL](https://github.com/usetrmnl/trmnl-firmware) releases,
+Builds M5Stack PaperS3 and Seeed Studio firmware from [TRMNL](https://github.com/usetrmnl/trmnl-firmware) releases,
 with optional patched variants, and offers downloads and browser USB flashing.
 
 [Open the Firmware Installer](https://maxexcloo.github.io/trmnl-builds/)

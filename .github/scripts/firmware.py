@@ -4,11 +4,25 @@ import argparse
 import hashlib
 import json
 import os
-import re
 import subprocess
 from pathlib import Path
 
 PATCHES = Path(__file__).resolve().parents[2] / "patches"
+# Upstream environments for the owner's M5Stack PaperS3 and Seeed Studio devices.
+TARGETS = [
+    "TRMNL_4inch26_DIY_Kit",
+    "TRMNL_7inch5_OG_DIY_Kit",
+    "TRMNL_7inch5_OG_DIY_Kit_3CLR",
+    "TRMNL_7inch5_OG_DIY_Kit_6CLR",
+    "TRMNL_X_E1003",
+    "TRMNL_X_PAPERS3",
+    "seeed_reTerminal_E1001",
+    "seeed_reTerminal_E1002",
+    "seeed_reTerminal_E1004",
+    "seeed_sticky",
+    "seeed_xiao_esp32c3",
+    "seeed_xiao_esp32s3",
+]
 UPSTREAM = "usetrmnl/trmnl-firmware"
 
 
@@ -71,28 +85,15 @@ def catalogue():
 
 
 def discover(path):
-    config = json.loads(path.read_text())
-    targets = []
-    skipped = []
-    for section, pairs in config:
-        if not section.startswith("env:"):
-            continue
-        name = section[4:]
-        options = dict(pairs)
-        flags = str(options.get("build_flags", ""))
-        # Base environments have no device selection; tests replace the application.
-        device = re.search(r"(?:BOARD_[A-Z0-9_]+|DEVICE_MODEL)(?:=|\b)", flags)
-        if options.get("board") and device and not options.get("test_build_src"):
-            targets.append(name)
-        else:
-            skipped.append(name)
-    if not targets:
-        raise ValueError(
-            "No firmware targets found; inspect the upstream configuration"
-        )
-    print("Excluded test/base environments:", ", ".join(sorted(skipped)))
+    environments = {
+        section[4:]
+        for section, _ in json.loads(path.read_text())
+        if section.startswith("env:")
+    }
+    if missing := [target for target in TARGETS if target not in environments]:
+        raise ValueError(f"Upstream no longer defines {', '.join(missing)}")
     builds = []
-    for target in sorted(targets):
+    for target in TARGETS:
         builds.append({"name": target, "patched": False, "target": target})
         if any((PATCHES / target).glob("*.patch")):
             builds.append(

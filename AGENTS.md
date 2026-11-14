@@ -2,15 +2,14 @@
 
 ## Structure
 
-- Discover targets from each upstream release; generate the catalogue from build
-  results. Do not maintain target or release lists. Keep reviewed patches in
+- Build only the owner's devices, listed in `TARGETS` in
+  `.github/scripts/firmware.py`; generate the catalogue from build results. Do
+  not maintain release lists. Keep reviewed patches in
   `patches/<upstream-target>/*.patch`, applied in filename order, with the
-  reason above the diff. Bump patch-embedded platforms by hand: newer
-  pioarduino platforms need PlatformIO Core 6.2.0, which upstream's older
-  platforms cannot use.
+  reason above the diff.
 - Poll only the newest stable release; do not automatically backfill older releases.
   Rebuilds of older releases must not change the Latest release.
-- Always build unchanged upstream targets. Discover separate patched variants
+- Always build listed targets unchanged. Discover separate patched variants
   from patch directories; failures must not block original builds. Publish the
   exact source archive for each variant. Do not fetch patches at build time.
 - Keep firmware execution in read-only jobs and publishing in a separate job.

@@ -17,41 +17,11 @@ spec.loader.exec_module(firmware)
 
 
 class FirmwareTests(unittest.TestCase):
-    def test_discovery_excludes_tests_and_bases_but_keeps_devices(self):
+    def test_discovery_builds_listed_targets_and_patched_variants(self):
         config = [
-            ["env:base", [["board", "esp32"]]],
-            ["env:native", [["platform", "native"]]],
-            ["env:hardware", [["board", "esp32"], ["build_flags", ["-DBOARD_TRMNL"]]]],
-            [
-                "env:model",
-                [["board", "esp32"], ["build_flags", ['-D DEVICE_MODEL="test"']]],
-            ],
-            [
-                "env:test",
-                [
-                    ["board", "esp32"],
-                    ["build_flags", ["-DBOARD_TRMNL"]],
-                    ["test_build_src", True],
-                ],
-            ],
-        ]
-        with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory) / "config.json"
-            path.write_text(json.dumps(config))
-            with (
-                patch.object(firmware, "output") as output,
-                contextlib.redirect_stdout(io.StringIO()),
-            ):
-                firmware.discover(path)
-            self.assertEqual(
-                [build["name"] for build in json.loads(output.call_args.args[1])],
-                ["hardware", "model"],
-            )
-
-    def test_discovery_adds_only_targets_with_patches(self):
-        config = [
-            ["env:beta", [["board", "esp32"], ["build_flags", ["-DBOARD_BETA"]]]],
-            ["env:alpha", [["board", "esp32"], ["build_flags", ["-DBOARD_ALPHA"]]]],
+            ["env:alpha", [["board", "esp32"]]],
+            ["env:beta", [["board", "esp32"]]],
+            ["env:other", [["board", "esp32"]]],
         ]
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -61,19 +31,23 @@ class FirmwareTests(unittest.TestCase):
             path.write_text(json.dumps(config))
             with (
                 patch.object(firmware, "PATCHES", root),
+                patch.object(firmware, "TARGETS", ["alpha", "beta"]),
                 patch.object(firmware, "output") as output,
-                contextlib.redirect_stdout(io.StringIO()),
             ):
                 firmware.discover(path)
-            output.assert_called_once()
-            self.assertEqual(
-                json.loads(output.call_args.args[1]),
-                [
-                    {"name": "alpha", "patched": False, "target": "alpha"},
-                    {"name": "alpha-patched", "patched": True, "target": "alpha"},
-                    {"name": "beta", "patched": False, "target": "beta"},
-                ],
-            )
+                self.assertEqual(
+                    json.loads(output.call_args.args[1]),
+                    [
+                        {"name": "alpha", "patched": False, "target": "alpha"},
+                        {"name": "alpha-patched", "patched": True, "target": "alpha"},
+                        {"name": "beta", "patched": False, "target": "beta"},
+                    ],
+                )
+                with (
+                    patch.object(firmware, "TARGETS", ["alpha", "gone"]),
+                    self.assertRaisesRegex(ValueError, "gone"),
+                ):
+                    firmware.discover(path)
 
     def test_pack_keeps_original_and_patched_variants_separate(self):
         with tempfile.TemporaryDirectory() as directory, contextlib.chdir(directory):
