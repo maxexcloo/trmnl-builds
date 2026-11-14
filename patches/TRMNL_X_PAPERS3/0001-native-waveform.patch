@@ -3,8 +3,8 @@ Paper S3 panel waveform.
 
 --- a/src/display.cpp
 +++ b/src/display.cpp
-@@ -1892,4 +1892,3 @@
-  {
+@@ -435,4 +435,3 @@ static void refresh_fastepd(bool bSkipClear) {
+   {
 -    int rc = bbep.setCustomMatrix(u8_graytable, sizeof(u8_graytable));
 -    Log_info("%s [%d]: setCustomMatrix returned %d\r\n", __FILE__, __LINE__, rc);
 +    // Preserve FastEPD's native Paper S3 greyscale waveform.
