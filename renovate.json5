@@ -4,7 +4,7 @@
   packageRules: [
     {
       description: "Keep the requires-python hold in pyproject.toml",
-      allowedVersions: "<3.15",
+      enabled: false,
       matchDepNames: ["python"],
     },
   ],
