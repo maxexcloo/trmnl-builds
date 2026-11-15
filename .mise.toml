@@ -1,21 +1,16 @@
 # Development
 [tasks.check]
-run = '''
-node -e '
-const { execFileSync } = require("node:child_process");
-const { readFileSync } = require("node:fs");
-const html = readFileSync("site/index.html", "utf8");
-const script = html.match(/<script type="module">([\s\S]*?)<\/script>/)[1];
-execFileSync("node", ["--check", "--input-type=module"], { input: script, stdio: ["pipe", "inherit", "inherit"] });
-'
-'''
-# Repeats the shared check dependencies to add the site syntax check.
 depends = [
   "check:actions",
   "check:mise",
   "check:oxfmt",
   "check:python",
+  "check:shell",
+  "check:site",
   "check:updates",
   "check:whitespace",
   "test:python",
 ]
+
+[tasks."check:site"]
+run = "sed -n '/<script type=\"module\">/,/<\\/script>/{//!p}' site/index.html | node --check --input-type=module"

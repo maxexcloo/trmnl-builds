@@ -29,7 +29,7 @@ jobs:
       builds: ${{ steps.targets.outputs.builds }}
       latest: ${{ steps.plan.outputs.latest }}
       repository: ${{ steps.plan.outputs.repository }}
-      sha: ${{ steps.source.outputs.sha }}
+      sha: ${{ steps.upstream.outputs.commit }}
       tag: ${{ steps.plan.outputs.tag }}
     steps:
       - name: Checkout
@@ -42,22 +42,19 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag }}
-      - if: steps.plan.outputs.tag != ''
+      - id: upstream
+        if: steps.plan.outputs.tag != ''
         name: Checkout Upstream
         uses: actions/checkout@v7
         with:
-          fetch-depth: 0
           path: upstream
           persist-credentials: false
           ref: refs/tags/${{ steps.plan.outputs.tag }}
           repository: ${{ steps.plan.outputs.repository }}
           submodules: recursive
-      - id: source
-        if: steps.plan.outputs.tag != ''
+      - if: steps.plan.outputs.tag != ''
         name: Archive Upstream Source
-        run: |
-          echo "sha=$(git -C upstream rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-          tar -C upstream -czf upstream-source.tar.gz --exclude=.git .
+        run: tar -C upstream -czf upstream-source.tar.gz --exclude=.git .
       - if: steps.plan.outputs.tag != ''
         name: Set Up Shared Tools & Tasks
         uses: maxexcloo/dotfiles/.github/actions/mise@main
@@ -99,19 +96,19 @@ jobs:
           ref: ${{ needs.discover.outputs.sha }}
           repository: ${{ needs.discover.outputs.repository }}
           submodules: recursive
-      - if: matrix.patched
-        name: Prepare Patched Variant
-        env:
-          NAME: ${{ matrix.name }}
-          TARGET: ${{ matrix.target }}
-        run: |
-          git -C upstream apply "$PWD/patches/$TARGET"/*.patch
-          mkdir -p "results/$NAME"
-          tar -C upstream -czf "results/$NAME/$NAME-source.tar.gz" --exclude=.git .
       - name: Set Up Shared Tools & Tasks
         uses: maxexcloo/dotfiles/.github/actions/mise@main
         with:
           tools: uv
+      - if: matrix.patched
+        name: Prepare Patched Variant
+        run: |
+          git -C upstream apply "$PWD/patches/$TARGET"/*.patch
+          mkdir -p "results/$NAME"
+          tar -C upstream -czf "results/$NAME/$NAME-source.tar.gz" --exclude=.git .
+        env:
+          NAME: ${{ matrix.name }}
+          TARGET: ${{ matrix.target }}
       - name: Install Dependencies
         run: uv sync --locked
       - id: build

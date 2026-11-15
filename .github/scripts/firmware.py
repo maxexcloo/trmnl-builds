@@ -1,11 +1,11 @@
 """Discover upstream firmware, publish build results, and generate the Pages catalogue."""
 
-import argparse
 import hashlib
 import json
 import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 PATCHES = Path(__file__).resolve().parents[2] / "patches"
@@ -28,7 +28,6 @@ def catalogue():
         urls = {
             asset["name"]: asset["browser_download_url"] for asset in release["assets"]
         }
-        manifest["targets"].sort(key=lambda result: result["target"])
         for result in manifest["targets"]:
             files = []
             for item in result["files"]:
@@ -71,7 +70,7 @@ def catalogue():
 
 
 def discover(path):
-    config = json.loads(path.read_text())
+    config = json.loads(Path(path).read_text())
     targets = []
     skipped = []
     for section, pairs in config:
@@ -81,7 +80,7 @@ def discover(path):
         options = dict(pairs)
         flags = str(options.get("build_flags", ""))
         # Base environments have no device selection; tests replace the application.
-        device = re.search(r"(?:BOARD_[A-Z0-9_]+|DEVICE_MODEL)(?:=|\b)", flags)
+        device = re.search(r"(?:BOARD_[A-Z0-9_]+|DEVICE_MODEL)\b", flags)
         if options.get("board") and device and not options.get("test_build_src"):
             targets.append(name)
         else:
@@ -201,7 +200,7 @@ def pack(target, outcome, name):
     )
 
 
-def plan(tag):
+def plan(tag=""):
     upstream = [release for release in releases(UPSTREAM) if not release["prerelease"]]
     upstream.sort(key=lambda release: release["published_at"])
     published = {
@@ -217,7 +216,6 @@ def plan(tag):
         if selected and selected["tag_name"] in published:
             selected = None
     tag = selected["tag_name"] if selected else ""
-    # Rebuilds of older releases must not take over the Latest marker.
     output("latest", str(bool(tag) and tag == upstream[-1]["tag_name"]).lower())
     output("repository", UPSTREAM)
     output("tag", tag)
@@ -235,18 +233,4 @@ def run(*args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__)
-    commands = parser.add_subparsers(dest="command", required=True)
-    commands.add_parser("catalogue")
-    commands.add_parser("discover").add_argument("path", type=Path)
-    commands.add_parser("plan").add_argument("tag", nargs="?", default="")
-    package = commands.add_parser("pack")
-    package.add_argument("target")
-    package.add_argument("outcome")
-    package.add_argument("name")
-    release = commands.add_parser("manifest")
-    release.add_argument("tag")
-    release.add_argument("sha")
-    release.add_argument("builds")
-    args = vars(parser.parse_args())
-    globals()[args.pop("command")](**args)
+    globals()[sys.argv[1]](*sys.argv[2:])
