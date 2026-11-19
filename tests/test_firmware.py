@@ -75,8 +75,18 @@ class FirmwareTests(unittest.TestCase):
                 ],
             )
 
-    def test_pack_keeps_original_and_patched_variants_separate(self):
-        with tempfile.TemporaryDirectory() as directory, contextlib.chdir(directory):
+    def test_manifest_keeps_original_and_patched_variants_separate(self):
+        builds = [
+            {"name": "hardware", "patched": False, "target": "hardware"},
+            {"name": "hardware-patched", "patched": True, "target": "hardware"},
+            {"name": "other-patched", "patched": True, "target": "other"},
+        ]
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            contextlib.chdir(directory),
+            patch.dict(os.environ, GITHUB_REPOSITORY="owner/builds", GITHUB_RUN_ID="1"),
+            contextlib.redirect_stdout(io.StringIO()),
+        ):
             build = Path("upstream/.pio/build/hardware")
             build.mkdir(parents=True)
             (build / "firmware.bin").write_bytes(b"original")
@@ -93,12 +103,24 @@ class FirmwareTests(unittest.TestCase):
                 ).read_bytes(),
                 b"patched",
             )
-            result = json.loads(
-                Path("results/hardware-patched/result.json").read_text()
+            firmware.manifest("v1", "commit", "2026-10-01", json.dumps(builds))
+            manifest = json.loads(Path("manifest.json").read_text())
+            self.assertEqual(manifest["published_at"], "2026-10-01")
+            original, patched, missing = manifest["targets"]
+            self.assertFalse(original["patched"])
+            self.assertEqual(patched["environment"], "hardware")
+            self.assertTrue(patched["patched"])
+            self.assertEqual(patched["target"], "hardware-patched")
+            self.assertEqual(
+                missing,
+                {
+                    "environment": "other",
+                    "files": [],
+                    "patched": True,
+                    "status": "failure",
+                    "target": "other-patched",
+                },
             )
-            self.assertEqual(result["environment"], "hardware")
-            self.assertTrue(result["patched"])
-            self.assertEqual(result["target"], "hardware-patched")
 
     def test_plan_selects_release_and_latest_marker(self):
         upstream = [
@@ -115,7 +137,11 @@ class FirmwareTests(unittest.TestCase):
             with (
                 self.subTest(tag=tag, owned=owned),
                 patch.dict(os.environ, GITHUB_REPOSITORY="owner/builds"),
-                patch.object(firmware, "releases", side_effect=[upstream, owned]),
+                patch.object(
+                    firmware,
+                    "releases",
+                    side_effect=[upstream] if tag else [upstream, owned],
+                ),
                 patch.object(firmware, "output") as output,
             ):
                 firmware.plan(tag)
@@ -123,6 +149,10 @@ class FirmwareTests(unittest.TestCase):
                     output.call_args_list,
                     [
                         call("latest", latest),
+                        call(
+                            "published_at",
+                            f"2026-10-0{expected[1:]}" if expected else "",
+                        ),
                         call("repository", firmware.UPSTREAM),
                         call("tag", expected),
                     ],

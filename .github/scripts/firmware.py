@@ -100,21 +100,26 @@ def discover(path):
     output("builds", json.dumps(builds, separators=(",", ":")))
 
 
-def manifest(tag, sha, builds):
+def manifest(tag, sha, published_at, builds):
     repo = os.environ["GITHUB_REPOSITORY"]
     results = []
     for build in json.loads(builds):
-        target = build["name"]
-        path = Path("results") / target / "result.json"
-        results.append(
+        name = build["name"]
+        path = Path("results") / name / "result.json"
+        result = (
             json.loads(path.read_text())
             if path.exists()
-            else {"status": "failure", "target": target, "files": []}
+            else {"status": "failure", "files": []}
         )
-    upstream = json.loads(run("gh", "api", f"repos/{UPSTREAM}/releases/tags/{tag}"))
+        result.update(
+            environment=build["target"],
+            patched=build["patched"],
+            target=name,
+        )
+        results.append(result)
     manifest = {
         "commit": sha,
-        "published_at": upstream["published_at"],
+        "published_at": published_at,
         "run": f"https://github.com/{repo}/actions/runs/{os.environ['GITHUB_RUN_ID']}",
         "tag": tag,
         "targets": results,
@@ -189,10 +194,7 @@ def pack(target, outcome, name):
     (destination / "result.json").write_text(
         json.dumps(
             {
-                "environment": target,
-                "patched": name != target,
                 "status": outcome,
-                "target": name,
                 "files": files,
                 "flash": flash,
             }
@@ -203,9 +205,6 @@ def pack(target, outcome, name):
 def plan(tag=""):
     upstream = [release for release in releases(UPSTREAM) if not release["prerelease"]]
     upstream.sort(key=lambda release: release["published_at"])
-    published = {
-        release["tag_name"] for release in releases(os.environ["GITHUB_REPOSITORY"])
-    }
     if tag:
         matches = [release for release in upstream if release["tag_name"] == tag]
         if not matches:
@@ -213,10 +212,14 @@ def plan(tag=""):
         selected = matches[0]
     else:
         selected = upstream[-1] if upstream else None
-        if selected and selected["tag_name"] in published:
+        if selected and any(
+            release["tag_name"] == selected["tag_name"]
+            for release in releases(os.environ["GITHUB_REPOSITORY"])
+        ):
             selected = None
     tag = selected["tag_name"] if selected else ""
     output("latest", str(bool(tag) and tag == upstream[-1]["tag_name"]).lower())
+    output("published_at", selected["published_at"] if selected else "")
     output("repository", UPSTREAM)
     output("tag", tag)
 
